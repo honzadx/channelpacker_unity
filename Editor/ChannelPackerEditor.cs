@@ -51,7 +51,7 @@ namespace AmeWorks.ChannelPacker.Editor
         {
             ChannelPackerEditor wnd = GetWindow<ChannelPackerEditor>();
             wnd.titleContent = new GUIContent("Channel Packer");
-            wnd.minSize = new Vector2(WINDOW_WIDTH + 16, MIN_WINDOW_HEIGHT);
+            wnd.minSize = new Vector2(WINDOW_WIDTH + 64, MIN_WINDOW_HEIGHT);
         }
 
         private void Update()
@@ -99,7 +99,7 @@ namespace AmeWorks.ChannelPacker.Editor
             mainElementsGroup.style.marginTop = 10;
             mainElementsGroup.style.marginLeft = BASE_PADDING;
             mainElementsGroup.style.marginRight = BASE_PADDING;
-            mainElementsGroup.style.minWidth = 280;
+            mainElementsGroup.style.minWidth = WINDOW_WIDTH;
             mainElementsGroup.style.minHeight = 64;
             mainElementsGroup.style.justifyContent = Justify.FlexStart;
             
