@@ -9,7 +9,7 @@ namespace AmeWorks.ChannelPacker.Editor
         public int width;
         public int height;
         public int samplingType;
-        public int invertValue;
+        public int invert;
         public float scaler;
         public float min;
         public float max;

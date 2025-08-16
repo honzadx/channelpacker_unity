@@ -6,7 +6,7 @@ struct ChannelData
     int width;
     int height;
     int samplingType;
-    int invertValue;
+    int invert;
     float scaler;
     float min;
     float max;
@@ -61,7 +61,7 @@ inline float ResolveChannel(uint index, uint2 id)
         + (channelData.mask >> 4 & 1) * pixel.a
     ) * invertedDefaultMask;
 
-    result = lerp(result, 1 - result, channelData.invertValue);
+    result = lerp(result, 1 - result, channelData.invert);
     result = lerp(result, result * channelData.scaler, invertedDefaultMask);
     result = lerp(result, clamp(result, channelData.min, channelData.max), invertedDefaultMask);
     return result;

@@ -4,19 +4,19 @@ namespace AmeWorks.ChannelPacker.Editor
 {
     public static class VisualElementExtensions
     {
-        public static void SetDisplayOption(this VisualElement self, ElementDisplayOption displayOption)
+        public static void SetVisibility(this VisualElement self, ElementVisibility visibility)
         {
-            switch (displayOption)
+            switch (visibility)
             {
-                case ElementDisplayOption.Visible:
+                case ElementVisibility.Visible:
                     self.style.display = DisplayStyle.Flex;
                     self.visible = true;
                     break;
-                case ElementDisplayOption.Hidden:
+                case ElementVisibility.Hidden:
                     self.style.display = DisplayStyle.Flex;
                     self.visible = false;
                     break;
-                case ElementDisplayOption.Collapsed:
+                case ElementVisibility.Collapsed:
                     self.style.display = DisplayStyle.None;
                     self.visible = false;
                     break;

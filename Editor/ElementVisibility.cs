@@ -1,6 +1,6 @@
 namespace AmeWorks.ChannelPacker.Editor
 {
-    public enum ElementDisplayOption
+    public enum ElementVisibility
     {
         Collapsed,
         Hidden, 

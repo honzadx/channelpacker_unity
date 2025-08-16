@@ -36,7 +36,7 @@ namespace AmeWorks.ChannelPacker.Editor
         public void SetData(
             float[]         defaultValues, 
             ChannelMask[]   channelMasks, 
-            bool[]          invertValues, 
+            bool[]          inverts, 
             float[]         channelScalers, 
             float[]         channelMin, 
             float[]         channelMax, 
@@ -50,11 +50,11 @@ namespace AmeWorks.ChannelPacker.Editor
                 var textureIsValid = texture != null;
                 _channelDatas[i] = new ChannelData
                 {
-                    mask            = !textureIsValid ? 0 : (int)channelMasks[i],
-                    width           = !textureIsValid ? 0 : texture.width,
-                    height          = !textureIsValid ? 0 : texture.height,
-                    samplingType    = !textureIsValid ? 0 : (int)samplingTypes[i],
-                    invertValue     = invertValues[i] ? 1 : 0,
+                    mask            = textureIsValid    ? (int)channelMasks[i]     : 0,
+                    width           = textureIsValid    ? texture.width            : 0,
+                    height          = textureIsValid    ? texture.height           : 0,
+                    samplingType    = textureIsValid    ? (int)samplingTypes[i]    : 0,
+                    invert          = inverts[i]        ? 1                        : 0,
                     scaler          = channelScalers[i],
                     min             = channelMin[i],
                     max             = channelMax[i],
@@ -65,7 +65,7 @@ namespace AmeWorks.ChannelPacker.Editor
             _previewMasking = previewMasking;
         }
         
-        public void RegenerateRenderTexture(ref RenderTexture resultRT, ref RenderTexture previewResultRT, Vector2Int size, RenderTextureFormat format)
+        public void RegenerateRenderTextures(ref RenderTexture resultRT, ref RenderTexture previewResultRT, Vector2Int size, RenderTextureFormat format)
         {
             if (size.x <= 0 || size.y <= 0)
                 return;
