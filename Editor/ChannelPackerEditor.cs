@@ -1,4 +1,3 @@
-using System.IO;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -9,12 +8,13 @@ namespace AmeWorks.ChannelPacker.Editor
     public class ChannelPackerEditor : EditorWindow
     {
         private const string FILE_PICKER_ICON_PATH =
-            "Packages/com.ameworks.channelpacker/Assets/Icons/FilePickerIcon.png";
+            "Packages/com.ameworks.channelpacker/Editor/Icons/FilePickerIcon.png";
 
         private const int CHANNEL_COUNT = 4;
-        private const float PADDING = 10;
-        private const float WINDOW_WIDTH = 274 + PADDING * 2;
-        private const float MIN_WINDOW_HEIGHT = 128 + PADDING * 2;
+        private const float BASE_PADDING = 10.0f;
+        private const float SMALL_PADDING = 4.0f;
+        private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
+        private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
         private readonly ChannelPackerGenerator _channelPackerGenerator = new();
         
@@ -28,8 +28,6 @@ namespace AmeWorks.ChannelPacker.Editor
         private readonly float[] _channelMax = new float[CHANNEL_COUNT];
 
         private Vector2Int _resultRTSize = new (128, 128);
-        private RenderTextureFormat _resultRTFormat = RenderTextureFormat.ARGB32;
-        private TextureFormat _resultTextureFormat = TextureFormat.ARGB32;
         private RenderTexture _resultRT;
         private bool _isRTDirty;
         
@@ -39,7 +37,7 @@ namespace AmeWorks.ChannelPacker.Editor
         // Elements
         private readonly FloatField[] _channelDefaultValueFields = new FloatField[CHANNEL_COUNT];
         private readonly EnumField[] _channelEnumFields = new EnumField[CHANNEL_COUNT];
-        private readonly Toggle[] _invertChannelToggles = new Toggle[CHANNEL_COUNT];
+        private readonly Toggle[] _invertValuesToggles = new Toggle[CHANNEL_COUNT];
         private readonly FloatField[] _channelScalerFields = new FloatField[CHANNEL_COUNT];
         private readonly FloatField[] _channelMinFields = new FloatField[CHANNEL_COUNT];
         private readonly FloatField[] _channelMaxFields = new FloatField[CHANNEL_COUNT];
@@ -52,7 +50,6 @@ namespace AmeWorks.ChannelPacker.Editor
             ChannelPackerEditor wnd = GetWindow<ChannelPackerEditor>();
             wnd.titleContent = new GUIContent("Channel Packer");
             wnd.minSize = new Vector2(WINDOW_WIDTH + 16, MIN_WINDOW_HEIGHT);
-            wnd.maxSize = new Vector2(WINDOW_WIDTH + 16, float.MaxValue);
         }
 
         private void Update()
@@ -68,7 +65,7 @@ namespace AmeWorks.ChannelPacker.Editor
                     _channelMax, 
                     _channelTextures
                 );
-                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _resultRTSize, _resultRTFormat);
+                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _resultRTSize, RenderTextureFormat.ARGB32);
                 _previewResultImage.image = _resultRT;
                 _isRTDirty = false;
             }
@@ -96,9 +93,8 @@ namespace AmeWorks.ChannelPacker.Editor
             VisualElement mainElementsGroup = new VisualElement();
             mainElementsGroup.style.flexDirection = FlexDirection.Column;
             mainElementsGroup.style.marginTop = 10;
-            mainElementsGroup.style.marginLeft = PADDING;
+            mainElementsGroup.style.marginLeft = BASE_PADDING;
             mainElementsGroup.style.minWidth = 280;
-            mainElementsGroup.style.maxWidth = 280;
             mainElementsGroup.style.minHeight = 64;
             mainElementsGroup.style.justifyContent = Justify.FlexStart;
             
@@ -111,32 +107,27 @@ namespace AmeWorks.ChannelPacker.Editor
 
             Vector2IntField textureSizeField = new Vector2IntField("Resolution");
             textureSizeField.value = _resultRTSize;
-            textureSizeField.style.marginTop = PADDING * 2;
+            textureSizeField.style.marginTop = BASE_PADDING * 2;
             textureSizeField.RegisterValueChangedCallback(evt =>
             {
                 _resultRTSize = evt.newValue;
                 _isRTDirty = true;
             });
-            EnumField renderTextureFormatField = new EnumField("Render Texture Format", _resultRTFormat);
-            renderTextureFormatField.RegisterValueChangedCallback(evt =>
-            {
-                _resultRTFormat = (RenderTextureFormat)evt.newValue;
-                _isRTDirty = true;
-            });
             
             VisualElement directoryPickerGroup = new VisualElement();
-            directoryPickerGroup.style.marginTop = PADDING * 2;
+            directoryPickerGroup.style.marginTop = BASE_PADDING * 2;
             directoryPickerGroup.style.flexDirection = FlexDirection.Row;
-            directoryPickerGroup.style.minWidth = WINDOW_WIDTH - PADDING;
+            directoryPickerGroup.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
             directoryPickerGroup.style.justifyContent = Justify.FlexStart;
+            directoryPickerGroup.style.flexGrow = 1;
             TextField outputDirectoryField = new TextField("Output Directory");
+            outputDirectoryField.style.flexGrow = 1;
             outputDirectoryField.value = _outputDirectory;
             outputDirectoryField.RegisterValueChangedCallback(evt =>
             {
                 _outputDirectory = evt.newValue;
             });
-            outputDirectoryField.style.minWidth = WINDOW_WIDTH - PADDING * 3 - 25;
-            outputDirectoryField.style.maxWidth = WINDOW_WIDTH - PADDING * 3 - 25;
+            outputDirectoryField.style.minWidth = WINDOW_WIDTH - BASE_PADDING * 3 - 25;
             Texture2D filePickerTexture = (Texture2D)EditorGUIUtility.Load(FILE_PICKER_ICON_PATH);
             Background filePickerBackground = Background.FromTexture2D(filePickerTexture);
             Button outputDirectoryButton = new Button(filePickerBackground,() =>
@@ -157,43 +148,30 @@ namespace AmeWorks.ChannelPacker.Editor
             {
                 _fileName = evt.newValue;
             });
-
-            EnumField textureFormatField = new EnumField("Texture Format", _resultTextureFormat);
-            textureFormatField.RegisterValueChangedCallback(evt =>
-            {
-                _resultTextureFormat = (TextureFormat)evt.newValue;
-            });
-            
             Button exportButton = new Button(() =>
             {
-                var path = Path.Combine(_outputDirectory, $"{_fileName}.png");
-                if (!Directory.Exists(_outputDirectory) || string.IsNullOrEmpty(_fileName))
-                    return;
-                _channelPackerGenerator.ExportToPNG(_resultRT, _resultRTSize, _resultTextureFormat, path);
+                _channelPackerGenerator.ExportToPNG(_resultRT, _resultRTSize, _outputDirectory, _fileName);
             });
-            exportButton.text = "Export";
+            exportButton.text = "Export PNG";
             
-            _previewResultImage = new Image 
+            var previewResultImage = new Image 
             {
                 scaleMode = ScaleMode.ScaleToFit,
                 style = 
                 {
                     width = 256,
                     height = 256,
-                    marginLeft = 12,
-                    marginTop = 10,
-                    alignSelf = Align.FlexStart,
+                    marginTop = BASE_PADDING,
+                    alignSelf = Align.Center,
                     backgroundColor = new Color(0.2f, 0.2f, 0.2f)
                 },
             };
+            _previewResultImage = previewResultImage;
 
             mainElementsGroup.Add(textureSizeField);
-            mainElementsGroup.Add(renderTextureFormatField);
-            mainElementsGroup.Add(_previewResultImage);
-            
+            mainElementsGroup.Add(previewResultImage);
             mainElementsGroup.Add(directoryPickerGroup);
             mainElementsGroup.Add(fileNameField);
-            mainElementsGroup.Add(textureFormatField);
             mainElementsGroup.Add(exportButton);
         }
 
@@ -201,16 +179,23 @@ namespace AmeWorks.ChannelPacker.Editor
         {
             VisualElement topElement = new VisualElement();
             topElement.style.flexDirection = FlexDirection.Row;
-            topElement.style.marginTop = PADDING;
-            topElement.style.minWidth = WINDOW_WIDTH - PADDING;
+            topElement.style.marginTop = BASE_PADDING;
+            topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
             topElement.style.justifyContent = Justify.FlexStart;
+            topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
+            topElement.style.paddingTop = SMALL_PADDING;
+            topElement.style.paddingBottom = SMALL_PADDING;
+            topElement.style.paddingLeft = SMALL_PADDING;
+            topElement.style.paddingRight = SMALL_PADDING;
+            topElement.style.justifyContent = Justify.Center;
             
             VisualElement verticalGroup = new VisualElement();
             verticalGroup.style.flexDirection = FlexDirection.Column;
-            verticalGroup.style.marginRight = PADDING;
+            verticalGroup.style.marginRight = BASE_PADDING;
             verticalGroup.style.minWidth = 200;
-            verticalGroup.style.maxWidth = 200;
+            verticalGroup.style.maxWidth = float.MaxValue;
             verticalGroup.style.minHeight = 64;
+            verticalGroup.style.flexGrow = 1;
             verticalGroup.style.justifyContent = Justify.FlexStart;
             
             ObjectField textureField = new ObjectField();
@@ -229,7 +214,7 @@ namespace AmeWorks.ChannelPacker.Editor
                 
                 _channelEnumFields[index].SetDisplayOption(evt.newValue != null 
                     ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                _invertChannelToggles[index].SetDisplayOption(evt.newValue != null 
+                _invertValuesToggles[index].SetDisplayOption(evt.newValue != null 
                     ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
                 _channelScalerFields[index].SetDisplayOption(evt.newValue != null 
                     ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
@@ -264,15 +249,15 @@ namespace AmeWorks.ChannelPacker.Editor
             });
             _channelEnumFields[index] = channelEnumField;
             
-            Toggle invertChannelToggle = new Toggle("Invert");
-            invertChannelToggle.SetDisplayOption(_channelTextures[index] != null 
+            Toggle invertValuesToggle = new Toggle("Invert");
+            invertValuesToggle.SetDisplayOption(_channelTextures[index] != null 
                 ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-            invertChannelToggle.RegisterValueChangedCallback(evt =>
+            invertValuesToggle.RegisterValueChangedCallback(evt =>
             {
                 _channelInvertValues[index] = evt.newValue;
                 _isRTDirty = true;
             });
-            _invertChannelToggles[index] = invertChannelToggle;
+            _invertValuesToggles[index] = invertValuesToggle;
 
             FloatField channelScalerField = new FloatField("Scale");
             channelScalerField.value = _channelScalers[index];
@@ -307,7 +292,7 @@ namespace AmeWorks.ChannelPacker.Editor
 
             verticalGroup.Add(textureField);
             verticalGroup.Add(channelEnumField);
-            verticalGroup.Add(invertChannelToggle);
+            verticalGroup.Add(invertValuesToggle);
             verticalGroup.Add(channelScalerField);
             verticalGroup.Add(channelMinField);
             verticalGroup.Add(channelMaxField);
@@ -321,7 +306,7 @@ namespace AmeWorks.ChannelPacker.Editor
                 {
                     width = 64,
                     height = 64,
-                    backgroundColor = new Color(defaultValue, defaultValue, defaultValue)
+                    backgroundColor = new Color(defaultValue, defaultValue, defaultValue),
                 },
                 image = _channelTextures[index]
             };

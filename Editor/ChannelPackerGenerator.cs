@@ -2,14 +2,13 @@ using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace AmeWorks.ChannelPacker.Editor
 {
     public class ChannelPackerGenerator : IDisposable
     {
         private const string COMPUTE_SHADER_PATH =
-            "Packages/com.ameworks.channelpacker/Assets/PackTexture.compute";
+            "Packages/com.ameworks.channelpacker/Editor/PackTexture.compute";
         
         private static readonly int _channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
         private static readonly int _inputRShaderID = Shader.PropertyToID("inputR");
@@ -84,20 +83,24 @@ namespace AmeWorks.ChannelPacker.Editor
             _computeShader.Dispatch(_mainKernelID, size.x, size.y, 1);
         }
         
-        public void ExportToPNG(RenderTexture sourceRT, Vector2Int size, TextureFormat format, string path)
+        public void ExportToPNG(RenderTexture sourceRT, Vector2Int size, string directory, string fileName)
         {
+            if (!Directory.Exists(directory) || string.IsNullOrEmpty(fileName))
+                return;
+            
             if (size.x <= 0 || size.y <= 0)
                 return;
 
             try
             {
-                Texture2D resultTexture = new Texture2D(size.x, size.y, format, false);
+                Texture2D resultTexture = new Texture2D(size.x, size.y, TextureFormat.ARGB32, false);
                 var previousActiveRT = RenderTexture.active;
 
                 RenderTexture.active = sourceRT;
                 resultTexture.ReadPixels(new Rect(0, 0, size.x, size.y), 0, 0);
                 resultTexture.Apply();
                 byte[] bytes = resultTexture.EncodeToPNG();
+                string path = Path.Combine(directory, $"{fileName}.png");
                 File.WriteAllBytes(path, bytes);
                 RenderTexture.active = previousActiveRT;
             }
