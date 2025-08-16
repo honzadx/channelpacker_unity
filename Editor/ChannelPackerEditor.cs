@@ -29,9 +29,11 @@ namespace AmeWorks.ChannelPacker.Editor
         private readonly float[] _channelScalers = new float[CHANNEL_COUNT];
         private readonly float[] _channelMin = new float[CHANNEL_COUNT];
         private readonly float[] _channelMax = new float[CHANNEL_COUNT];
-
+        
+        private ChannelMask _previewMasking = ChannelMask.R | ChannelMask.G | ChannelMask.B | ChannelMask.A;
         private Vector2Int _textureSize = new (128, 128);
         private RenderTexture _resultRT;
+        private RenderTexture _previewResultRT;
         private bool _isRTDirty;
         
         private string _outputDirectory = string.Empty;
@@ -64,10 +66,11 @@ namespace AmeWorks.ChannelPacker.Editor
                     _channelMin, 
                     _channelMax, 
                     _channelTextures,
-                    _samplingTypes
+                    _samplingTypes,
+                    _previewMasking
                 );
-                _renderTextureGenerator.RegenerateRenderTexture(ref _resultRT, _textureSize, RenderTextureFormat.ARGB32);
-                _previewResultImage.image = _resultRT;
+                _renderTextureGenerator.RegenerateRenderTexture(ref _resultRT, ref _previewResultRT, _textureSize, RenderTextureFormat.ARGB32);
+                _previewResultImage.image = _previewResultRT;
                 _isRTDirty = false;
             }
         }
@@ -120,6 +123,13 @@ namespace AmeWorks.ChannelPacker.Editor
                 _textureSize = sanitizedResolution;
                 _isRTDirty = true;
             });
+
+            EnumFlagsField previewFlagsField = new EnumFlagsField("Preview Filter", _previewMasking);
+            previewFlagsField.RegisterValueChangedCallback(evt =>
+            {
+                _previewMasking = (ChannelMask)evt.newValue;
+                _isRTDirty = true;
+            });
             
             VisualElement directoryPickerGroup = new VisualElement();
             directoryPickerGroup.style.marginTop = BASE_PADDING * 2;
@@ -127,6 +137,7 @@ namespace AmeWorks.ChannelPacker.Editor
             directoryPickerGroup.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
             directoryPickerGroup.style.justifyContent = Justify.FlexStart;
             directoryPickerGroup.style.flexGrow = 1;
+            
             TextField outputDirectoryField = new TextField("Output Directory");
             outputDirectoryField.style.flexGrow = 1;
             outputDirectoryField.value = _outputDirectory;
@@ -135,6 +146,7 @@ namespace AmeWorks.ChannelPacker.Editor
                 _outputDirectory = evt.newValue;
             });
             outputDirectoryField.style.minWidth = WINDOW_WIDTH - BASE_PADDING * 3 - 25;
+            
             Texture2D filePickerTexture = (Texture2D)EditorGUIUtility.Load(FILE_PICKER_ICON_PATH);
             Background filePickerBackground = Background.FromTexture2D(filePickerTexture);
             Button outputDirectoryButton = new Button(filePickerBackground,() =>
@@ -155,6 +167,7 @@ namespace AmeWorks.ChannelPacker.Editor
             {
                 _fileName = evt.newValue;
             });
+            
             Button exportButton = new Button(() =>
             {
                 _resultRT.TryExportToPNG(_textureSize, _outputDirectory, _fileName);
@@ -175,6 +188,7 @@ namespace AmeWorks.ChannelPacker.Editor
             _previewResultImage = previewResultImage;
 
             mainElementsGroup.Add(textureSizeField);
+            mainElementsGroup.Add(previewFlagsField);
             mainElementsGroup.Add(previewResultImage);
             mainElementsGroup.Add(directoryPickerGroup);
             mainElementsGroup.Add(fileNameField);
