@@ -63,7 +63,7 @@ namespace AmeWorks.ChannelPacker.Editor
             _channelDataBuffer.SetData(_channelDataArray);
         }
         
-        public void UpdateRenderTexture(Image preview, RenderTexture resultRT, Vector2Int size, RenderTextureFormat format)
+        public void UpdateRenderTexture(ref RenderTexture resultRT, Vector2Int size, RenderTextureFormat format)
         {
             if (size.x <= 0 || size.y <= 0)
                 return;
@@ -82,8 +82,6 @@ namespace AmeWorks.ChannelPacker.Editor
             _computeShader.SetTexture(_mainKernelID, _inputAShaderID, _channelTextures[3] ?? Texture2D.blackTexture);
             _computeShader.SetTexture(_mainKernelID, _resultShaderID, resultRT);
             _computeShader.Dispatch(_mainKernelID, size.x, size.y, 1);
-            
-            preview.image = resultRT;
         }
         
         public void ExportToPNG(RenderTexture sourceRT, Vector2Int size, TextureFormat format, string path)

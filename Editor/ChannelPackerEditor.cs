@@ -68,7 +68,8 @@ namespace AmeWorks.ChannelPacker.Editor
                     _channelMax, 
                     _channelTextures
                 );
-                _channelPackerGenerator.UpdateRenderTexture(_previewResultImage, _resultRT, _resultRTSize, _resultRTFormat);
+                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _resultRTSize, _resultRTFormat);
+                _previewResultImage.image = _resultRT;
                 _isRTDirty = false;
             }
         }
