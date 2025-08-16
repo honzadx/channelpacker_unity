@@ -10,6 +10,7 @@ namespace AmeWorks.ChannelPacker.Editor
         private const string FILE_PICKER_ICON_PATH =
             "Packages/com.ameworks.channelpacker/Editor/Icons/FilePickerIcon.png";
 
+        private const int MAX_RESOLUTION = 8192;
         private const int CHANNEL_COUNT = 4;
         private const float BASE_PADDING = 10.0f;
         private const float SMALL_PADDING = 4.0f;
@@ -94,6 +95,7 @@ namespace AmeWorks.ChannelPacker.Editor
             mainElementsGroup.style.flexDirection = FlexDirection.Column;
             mainElementsGroup.style.marginTop = 10;
             mainElementsGroup.style.marginLeft = BASE_PADDING;
+            mainElementsGroup.style.marginRight = BASE_PADDING;
             mainElementsGroup.style.minWidth = 280;
             mainElementsGroup.style.minHeight = 64;
             mainElementsGroup.style.justifyContent = Justify.FlexStart;
@@ -110,9 +112,12 @@ namespace AmeWorks.ChannelPacker.Editor
             textureSizeField.style.marginTop = BASE_PADDING * 2;
             textureSizeField.RegisterValueChangedCallback(evt =>
             {
-                _textureSize.x = Mathf.Clamp(evt.newValue.x, 0, 8192);
-                _textureSize.y = Mathf.Clamp(evt.newValue.y, 0, 8192);
-                textureSizeField.value = _textureSize;
+                var sanitizedResolution = new Vector2Int(
+                    Mathf.Clamp(evt.newValue.x, 0, MAX_RESOLUTION),
+                    Mathf.Clamp(evt.newValue.y, 0, MAX_RESOLUTION));
+
+                textureSizeField.value = sanitizedResolution;
+                _textureSize = sanitizedResolution;
                 _isRTDirty = true;
             });
             
@@ -161,10 +166,10 @@ namespace AmeWorks.ChannelPacker.Editor
                 scaleMode = ScaleMode.ScaleToFit,
                 style = 
                 {
-                    width = 256,
-                    height = 256,
-                    marginTop = BASE_PADDING,
-                    alignSelf = Align.Center,
+                    width           = 256,
+                    height          = 256,
+                    marginTop       = BASE_PADDING,
+                    alignSelf       = Align.Center,
                     backgroundColor = new Color(0.2f, 0.2f, 0.2f)
                 },
             };
