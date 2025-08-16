@@ -1,0 +1,11 @@
+{
+  "name": "com.ameworks.channelpacker",
+  "version": "1.0.0",
+  "displayName": "Channel Packer",
+  "description": "Merges multiple textures into one",
+  "dependencies": {},
+  "keywords": [],
+  "author": {
+    "name": "zdx@.rt"
+  }
+}

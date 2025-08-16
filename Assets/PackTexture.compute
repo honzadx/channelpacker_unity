@@ -1,0 +1,56 @@
+#pragma kernel CSMain
+
+struct ChannelData
+{
+    int mask;
+    int invertValue;
+    float scaler;
+    float min;
+    float max;
+    float defaultValue;
+};
+
+StructuredBuffer<ChannelData> channelDataBuffer : register(t0);
+Texture2D inputR;
+Texture2D inputG;
+Texture2D inputB;
+Texture2D inputA;
+
+RWTexture2D<float4> result;
+
+float ResolveChannel(uint index, float4 pixel)
+{
+    ChannelData channelData = channelDataBuffer[index];
+
+    int defaultMask = !(channelData.mask << 1) & 1;
+    int invertedDefaultMask = 1 - defaultMask;
+    float result = defaultMask * channelData.defaultValue
+    + (
+        (channelData.mask >> 1 & 1) * pixel.r
+        + (channelData.mask >> 2 & 1) * pixel.g
+        + (channelData.mask >> 3 & 1) * pixel.b
+        + (channelData.mask >> 4 & 1) * pixel.a
+    ) * invertedDefaultMask;
+
+    if(invertedDefaultMask)
+    {
+        if(channelData.invertValue)
+            result = 1 - result;
+
+        result *= channelData.scaler;
+        result = clamp(result, channelData.min, channelData.max);
+    }
+    return result;
+}
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    result[id.xy] = float4
+    (
+        ResolveChannel(0, inputR[id.xy]),
+        ResolveChannel(1, inputG[id.xy]),
+        ResolveChannel(2, inputB[id.xy]),
+        ResolveChannel(3, inputA[id.xy])
+    );
+}
