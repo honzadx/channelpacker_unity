@@ -14,8 +14,6 @@ namespace AmeWorks.ChromaPacker.Editor
         private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
-        private static readonly Color _backgroundColor = new (0.2f, 0.2f, 0.2f);
-
         [SerializeField] private ChromaPackerRTGenerator _renderTextureGenerator;
         
         // Data
@@ -80,7 +78,7 @@ namespace AmeWorks.ChromaPacker.Editor
             _isRTDirty = false;
         }
         
-        private void Init()
+        private void CreateGUI()
         {
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
@@ -88,11 +86,6 @@ namespace AmeWorks.ChromaPacker.Editor
                 _channelMax[i] = 1.0f;
                 _channelScalers[i] = 1.0f;
             }
-        }
-
-        private void CreateGUI()
-        {
-            Init();
             
             VisualElement root = rootVisualElement;
             root.style.justifyContent = Justify.FlexStart;
@@ -133,7 +126,7 @@ namespace AmeWorks.ChromaPacker.Editor
                 topElement.style.flexDirection = FlexDirection.Row;
                 topElement.style.marginTop = BASE_PADDING;
                 topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
-                topElement.style.backgroundColor = _backgroundColor;
+                topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
                 topElement.style.paddingTop = SMALL_PADDING;
                 topElement.style.paddingBottom = SMALL_PADDING;
                 topElement.style.paddingLeft = SMALL_PADDING;
@@ -171,7 +164,7 @@ namespace AmeWorks.ChromaPacker.Editor
                     _channelTextures[index] = newTexture;
                     _previewImages[index].image = newTexture;
                     _previewImages[index].style.backgroundColor = isTextureValid 
-                        ? _backgroundColor 
+                        ? new Color(0.2f, 0.2f, 0.2f) 
                         : new Color(defaultValue, defaultValue, defaultValue);
                     
                     _noTextureGroups[index].SetVisibility(isTextureValid ? ElementVisibility.Collapsed : ElementVisibility.Visible);
@@ -315,7 +308,7 @@ namespace AmeWorks.ChromaPacker.Editor
                     height          = 256,
                     marginTop       = BASE_PADDING,
                     alignSelf       = Align.Center,
-                    backgroundColor = _backgroundColor
+                    backgroundColor = new Color(0.2f, 0.2f, 0.2f)
                 },
             };
             _previewResultImage = previewResultImage;
