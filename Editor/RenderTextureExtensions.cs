@@ -8,7 +8,7 @@ namespace AmeWorks.ChannelPacker.Editor
     public static class RenderTextureExtensions
     {
         public static bool TryExportToPNG(
-            this RenderTexture renderTexture, 
+            this RenderTexture self, 
             Vector2Int size, 
             string directory,
             string fileName)
@@ -20,16 +20,15 @@ namespace AmeWorks.ChannelPacker.Editor
                 return false;
 
             Texture2D resultTexture = new Texture2D(size.x, size.y, TextureFormat.ARGB32, false);
+            var previousActiveRT = RenderTexture.active;
             try
             {
-                var previousActiveRT = RenderTexture.active;
-                RenderTexture.active = renderTexture;
+                RenderTexture.active = self;
                 resultTexture.ReadPixels(new Rect(0, 0, size.x, size.y), 0, 0);
                 resultTexture.Apply();
                 byte[] bytes = resultTexture.EncodeToPNG();
                 string path = Path.Combine(directory, $"{fileName}.png");
                 File.WriteAllBytes(path, bytes);
-                RenderTexture.active = previousActiveRT;
             }
             catch (Exception e)
             {
@@ -38,6 +37,7 @@ namespace AmeWorks.ChannelPacker.Editor
             }
             finally
             {
+                RenderTexture.active = previousActiveRT;
                 Object.DestroyImmediate(resultTexture);
             }
             return true;
