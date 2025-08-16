@@ -1,15 +1,11 @@
-using System;
-using System.IO;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace AmeWorks.ChannelPacker.Editor
 {
-    public class ChannelPackerGenerator
+    public class ChannelPackerRTGenerator
     {
-        private const string COMPUTE_SHADER_PATH =
-            "Packages/com.ameworks.channelpacker/Editor/PackTexture.compute";
+        private const string COMPUTE_SHADER_PATH = "Packages/com.ameworks.channelpacker/Editor/PackTexture.compute";
         
         private static readonly int _channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
         private static readonly int _inputRShaderID = Shader.PropertyToID("inputR");
@@ -37,13 +33,19 @@ namespace AmeWorks.ChannelPacker.Editor
             float[]         channelScalers, 
             float[]         channelMin, 
             float[]         channelMax, 
-            Texture2D[]     channelTextures) 
+            Texture2D[]     channelTextures,
+            SamplingType[]  samplingTypes)
         {
             for (int i = 0; i < _channelDatas.Length; i++)
             {
+                var texture = channelTextures[i];
+                var textureIsValid = texture != null;
                 _channelDatas[i] = new ChannelData
                 {
-                    mask            = channelTextures[i] == null ? 0 : (int)channelMasks[i],
+                    mask            = !textureIsValid ? 0 : (int)channelMasks[i],
+                    width           = !textureIsValid ? 0 : texture.width,
+                    height          = !textureIsValid ? 0 : texture.height,
+                    samplingType    = !textureIsValid ? 0 : (int)samplingTypes[i],
                     invertValue     = invertValues[i] ? 1 : 0,
                     scaler          = channelScalers[i],
                     min             = channelMin[i],
@@ -54,7 +56,7 @@ namespace AmeWorks.ChannelPacker.Editor
             _channelTextures = channelTextures;
         }
         
-        public void UpdateRenderTexture(ref RenderTexture resultRT, Vector2Int size, RenderTextureFormat format)
+        public void RegenerateRenderTexture(ref RenderTexture resultRT, Vector2Int size, RenderTextureFormat format)
         {
             if (size.x <= 0 || size.y <= 0)
                 return;
@@ -66,7 +68,7 @@ namespace AmeWorks.ChannelPacker.Editor
             resultRT.enableRandomWrite = true;
             resultRT.Create();
             
-            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 4 + sizeof(int) * 2);
+            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 4 + sizeof(int) * 5);
             channelDataBuffer.SetData(_channelDatas);
             
             _computeShader.SetBuffer(_mainKernelID, _channelDataBufferShaderID, channelDataBuffer);
@@ -78,36 +80,6 @@ namespace AmeWorks.ChannelPacker.Editor
             _computeShader.Dispatch(_mainKernelID, size.x, size.y, 1);
             
             channelDataBuffer.Release();
-        }
-        
-        public void ExportToPNG(RenderTexture sourceRT, Vector2Int size, string directory, string fileName)
-        {
-            if (!Directory.Exists(directory) || string.IsNullOrEmpty(fileName))
-                return;
-            
-            if (size.x <= 0 || size.y <= 0)
-                return;
-
-            Texture2D resultTexture = new Texture2D(size.x, size.y, TextureFormat.ARGB32, false);
-            try
-            {
-                var previousActiveRT = RenderTexture.active;
-                RenderTexture.active = sourceRT;
-                resultTexture.ReadPixels(new Rect(0, 0, size.x, size.y), 0, 0);
-                resultTexture.Apply();
-                byte[] bytes = resultTexture.EncodeToPNG();
-                string path = Path.Combine(directory, $"{fileName}.png");
-                File.WriteAllBytes(path, bytes);
-                RenderTexture.active = previousActiveRT;
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-            finally
-            {
-                Object.DestroyImmediate(resultTexture);
-            }
         }
     }
 }

@@ -7,8 +7,7 @@ namespace AmeWorks.ChannelPacker.Editor
 {
     public class ChannelPackerEditor : EditorWindow
     {
-        private const string FILE_PICKER_ICON_PATH =
-            "Packages/com.ameworks.channelpacker/Editor/Icons/FilePickerIcon.png";
+        private const string FILE_PICKER_ICON_PATH = "Packages/com.ameworks.channelpacker/Editor/Icons/FilePickerIcon.png";
 
         private const int MAX_RESOLUTION = 8192;
         private const int CHANNEL_COUNT = 4;
@@ -17,12 +16,15 @@ namespace AmeWorks.ChannelPacker.Editor
         private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
-        private readonly ChannelPackerGenerator _channelPackerGenerator = new();
+        private static readonly Color _backgroundColor = new (0.2f, 0.2f, 0.2f);
+        
+        private readonly ChannelPackerRTGenerator _renderTextureGenerator = new();
         
         // Data
         private readonly float[] _channelDefaultValues = new float[CHANNEL_COUNT];
         private readonly Texture2D[] _channelTextures = new Texture2D[CHANNEL_COUNT];
         private readonly ChannelMask[] _channelMasks = new ChannelMask[CHANNEL_COUNT];
+        private readonly SamplingType[] _samplingTypes = new SamplingType[CHANNEL_COUNT];
         private readonly bool[] _channelInvertValues = new bool[CHANNEL_COUNT];
         private readonly float[] _channelScalers = new float[CHANNEL_COUNT];
         private readonly float[] _channelMin = new float[CHANNEL_COUNT];
@@ -36,13 +38,10 @@ namespace AmeWorks.ChannelPacker.Editor
         private string _fileName = string.Empty;
         
         // Elements
-        private readonly FloatField[] _channelDefaultValueFields = new FloatField[CHANNEL_COUNT];
-        private readonly EnumField[] _channelEnumFields = new EnumField[CHANNEL_COUNT];
-        private readonly Toggle[] _invertValuesToggles = new Toggle[CHANNEL_COUNT];
-        private readonly FloatField[] _channelScalerFields = new FloatField[CHANNEL_COUNT];
-        private readonly FloatField[] _channelMinFields = new FloatField[CHANNEL_COUNT];
-        private readonly FloatField[] _channelMaxFields = new FloatField[CHANNEL_COUNT];
+        private readonly Label[] _channelTextureSizeLabels = new Label[CHANNEL_COUNT];
         private readonly Image[] _previewImages = new Image[CHANNEL_COUNT];
+        private readonly VisualElement[] _noTextureGroups = new VisualElement[CHANNEL_COUNT];
+        private readonly VisualElement[] _textureGroups = new VisualElement[CHANNEL_COUNT];
         private Image _previewResultImage;
         
         [MenuItem("Tools/Channel Packer")]
@@ -57,16 +56,17 @@ namespace AmeWorks.ChannelPacker.Editor
         {
             if (_isRTDirty)
             {
-                _channelPackerGenerator.SetData(
+                _renderTextureGenerator.SetData(
                     _channelDefaultValues, 
                     _channelMasks,
                     _channelInvertValues, 
                     _channelScalers, 
                     _channelMin, 
                     _channelMax, 
-                    _channelTextures
+                    _channelTextures,
+                    _samplingTypes
                 );
-                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _textureSize, RenderTextureFormat.ARGB32);
+                _renderTextureGenerator.RegenerateRenderTexture(ref _resultRT, _textureSize, RenderTextureFormat.ARGB32);
                 _previewResultImage.image = _resultRT;
                 _isRTDirty = false;
             }
@@ -74,7 +74,7 @@ namespace AmeWorks.ChannelPacker.Editor
 
         private void CreateGUI()
         {
-            _channelPackerGenerator.Init();
+            _renderTextureGenerator.Init();
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
                 _channelMasks[i] = ChannelMask.R;
@@ -157,20 +157,19 @@ namespace AmeWorks.ChannelPacker.Editor
             });
             Button exportButton = new Button(() =>
             {
-                _channelPackerGenerator.ExportToPNG(_resultRT, _textureSize, _outputDirectory, _fileName);
+                _resultRT.TryExportToPNG(_textureSize, _outputDirectory, _fileName);
             });
             exportButton.text = "Export PNG";
             
             var previewResultImage = new Image 
             {
                 scaleMode = ScaleMode.ScaleToFit,
-                style = 
-                {
+                style = {
                     width           = 256,
                     height          = 256,
                     marginTop       = BASE_PADDING,
                     alignSelf       = Align.Center,
-                    backgroundColor = new Color(0.2f, 0.2f, 0.2f)
+                    backgroundColor = _backgroundColor
                 },
             };
             _previewResultImage = previewResultImage;
@@ -184,58 +183,73 @@ namespace AmeWorks.ChannelPacker.Editor
 
         private void AddChannelTextureElement(VisualElement parent, int index)
         {
+            var texture = _channelTextures[index];
+                
             VisualElement topElement = new VisualElement();
             topElement.style.flexDirection = FlexDirection.Row;
             topElement.style.marginTop = BASE_PADDING;
             topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
             topElement.style.justifyContent = Justify.FlexStart;
-            topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
+            topElement.style.backgroundColor = _backgroundColor;
             topElement.style.paddingTop = SMALL_PADDING;
             topElement.style.paddingBottom = SMALL_PADDING;
             topElement.style.paddingLeft = SMALL_PADDING;
             topElement.style.paddingRight = SMALL_PADDING;
             topElement.style.justifyContent = Justify.Center;
             
-            VisualElement verticalGroup = new VisualElement();
-            verticalGroup.style.flexDirection = FlexDirection.Column;
-            verticalGroup.style.marginRight = BASE_PADDING;
-            verticalGroup.style.minWidth = 200;
-            verticalGroup.style.maxWidth = float.MaxValue;
-            verticalGroup.style.minHeight = 64;
-            verticalGroup.style.flexGrow = 1;
-            verticalGroup.style.justifyContent = Justify.FlexStart;
+            VisualElement verticalGroupLeft = new VisualElement();
+            verticalGroupLeft.style.flexDirection = FlexDirection.Column;
+            verticalGroupLeft.style.marginRight = BASE_PADDING;
+            verticalGroupLeft.style.minWidth = 200;
+            verticalGroupLeft.style.maxWidth = float.MaxValue;
+            verticalGroupLeft.style.minHeight = 64;
+            verticalGroupLeft.style.flexGrow = 1;
+            verticalGroupLeft.style.justifyContent = Justify.FlexStart;
+            
+            VisualElement noTextureGroup = new VisualElement();
+            noTextureGroup.style.flexDirection = FlexDirection.Column;
+            noTextureGroup.SetDisplayOption(texture != null 
+                ? ElementDisplayOption.Collapsed 
+                : ElementDisplayOption.Visible);
+            _noTextureGroups[index] = noTextureGroup;
+            
+            VisualElement textureGroup = new VisualElement();
+            textureGroup.SetDisplayOption(texture != null 
+                ? ElementDisplayOption.Visible 
+                : ElementDisplayOption.Collapsed);
+            textureGroup.style.flexDirection = FlexDirection.Column;
+            _textureGroups[index] = textureGroup;
             
             ObjectField textureField = new ObjectField();
             textureField.objectType = typeof(Texture2D);
             textureField.allowSceneObjects = false;
-            textureField.value = _channelTextures[index];
+            textureField.value = texture;
             textureField.RegisterValueChangedCallback(evt =>
             {
-                _channelTextures[index] = evt.newValue as Texture2D;
-                _previewImages[index].image = _channelTextures[index];
+                var newTexture = evt.newValue as Texture2D;
                 var defaultValue = _channelDefaultValues[index];
-                _previewImages[index].style.backgroundColor = new Color(defaultValue, defaultValue, defaultValue);
+                var isTextureValid = newTexture != null;
+                _channelTextures[index] = newTexture;
+                _previewImages[index].image = newTexture;
+                _previewImages[index].style.backgroundColor = isTextureValid 
+                    ? _backgroundColor 
+                    : new Color(defaultValue, defaultValue, defaultValue);
                 
-                _channelDefaultValueFields[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Collapsed : ElementDisplayOption.Visible);
-                
-                _channelEnumFields[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                _invertValuesToggles[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                _channelScalerFields[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                _channelMinFields[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                _channelMaxFields[index].SetDisplayOption(evt.newValue != null 
-                    ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
-                
+                _noTextureGroups[index].SetDisplayOption(isTextureValid
+                    ? ElementDisplayOption.Collapsed 
+                    : ElementDisplayOption.Visible);
+                _textureGroups[index].SetDisplayOption(isTextureValid
+                    ? ElementDisplayOption.Visible 
+                    : ElementDisplayOption.Collapsed);
+                _channelTextureSizeLabels[index].SetDisplayOption(isTextureValid
+                    ? ElementDisplayOption.Visible 
+                    : ElementDisplayOption.Collapsed);
+
+                _channelTextureSizeLabels[index].text = newTexture == null ? "" : $"{newTexture.width} x {newTexture.height}";
                 _isRTDirty = true;
             });
 
             FloatField defaultValueField = new FloatField("No Texture Source");
-            defaultValueField.SetDisplayOption(_channelTextures[index] == null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             defaultValueField.value = _channelDefaultValues[index];
             defaultValueField.RegisterValueChangedCallback(evt => 
             {
@@ -244,83 +258,92 @@ namespace AmeWorks.ChannelPacker.Editor
                 _previewImages[index].style.backgroundColor = new Color(defaultValue, defaultValue, defaultValue);
                 _isRTDirty = true;
             });
-            _channelDefaultValueFields[index] = defaultValueField;
-
             EnumField channelEnumField = new EnumField("Channel Mask", _channelMasks[index]);
-            channelEnumField.SetDisplayOption(_channelTextures[index] != null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             channelEnumField.RegisterValueChangedCallback(evt =>
             {
                 _channelMasks[index] = (ChannelMask)evt.newValue;
                 _isRTDirty = true;
             });
-            _channelEnumFields[index] = channelEnumField;
-            
             Toggle invertValuesToggle = new Toggle("Invert");
-            invertValuesToggle.SetDisplayOption(_channelTextures[index] != null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             invertValuesToggle.RegisterValueChangedCallback(evt =>
             {
                 _channelInvertValues[index] = evt.newValue;
                 _isRTDirty = true;
             });
-            _invertValuesToggles[index] = invertValuesToggle;
-
             FloatField channelScalerField = new FloatField("Scale");
             channelScalerField.value = _channelScalers[index];
-            channelScalerField.SetDisplayOption(_channelTextures[index] != null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             channelScalerField.RegisterValueChangedCallback(evt =>
             {
                 _channelScalers[index] = evt.newValue;
                 _isRTDirty = true;
             });
-            _channelScalerFields[index] = channelScalerField;
             FloatField channelMinField = new FloatField("Min");
             channelMinField.value = _channelMin[index];
-            channelMinField.SetDisplayOption(_channelTextures[index] != null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             channelMinField.RegisterValueChangedCallback(evt =>
             {
                 _channelMin[index] = evt.newValue;
                 _isRTDirty = true;
             });
-            _channelMinFields[index] = channelMinField;
             FloatField channelMaxField = new FloatField("Max");
             channelMaxField.value = _channelMax[index];
-            channelMaxField.SetDisplayOption(_channelTextures[index] != null 
-                ? ElementDisplayOption.Visible : ElementDisplayOption.Collapsed);
             channelMaxField.RegisterValueChangedCallback(evt =>
             {
                 _channelMax[index] = evt.newValue;
                 _isRTDirty = true;
             });
-            _channelMaxFields[index] = channelMaxField;
+            EnumField samplingTypeField = new EnumField("Sampling Type", _samplingTypes[index]);
+            samplingTypeField.RegisterValueChangedCallback(evt =>
+            {
+                _samplingTypes[index] = (SamplingType)evt.newValue;
+                _isRTDirty = true;
+            });
 
-            verticalGroup.Add(textureField);
-            verticalGroup.Add(channelEnumField);
-            verticalGroup.Add(invertValuesToggle);
-            verticalGroup.Add(channelScalerField);
-            verticalGroup.Add(channelMinField);
-            verticalGroup.Add(channelMaxField);
-            verticalGroup.Add(defaultValueField);
+            verticalGroupLeft.Add(textureField);
+            verticalGroupLeft.Add(noTextureGroup);
+            verticalGroupLeft.Add(textureGroup);
+            
+            textureGroup.Add(channelEnumField);
+            textureGroup.Add(invertValuesToggle);
+            textureGroup.Add(channelScalerField);
+            textureGroup.Add(channelMinField);
+            textureGroup.Add(channelMaxField);
+            textureGroup.Add(samplingTypeField);
+            noTextureGroup.Add(defaultValueField);
 
             var defaultValue = _channelDefaultValues[index];
             Image previewImage = _previewImages[index] ?? new Image 
             {
                 scaleMode = ScaleMode.ScaleToFit,
-                style = 
-                {
-                    width = 64,
-                    height = 64,
+                style = {
+                    alignSelf       = Align.Center,
+                    width           = 64,
+                    height          = 64,
                     backgroundColor = new Color(defaultValue, defaultValue, defaultValue),
                 },
-                image = _channelTextures[index]
+                image = texture
             };
             _previewImages[index] = previewImage;
             
-            topElement.Add(verticalGroup);
-            topElement.Add(previewImage);
+            Label textureSizeLabel = new Label(texture == null ? "" : $"{texture.width} x {texture.height}");
+            textureSizeLabel.style.fontSize = 10;
+            textureSizeLabel.style.alignSelf = Align.Center;
+            textureSizeLabel.SetDisplayOption(texture != null 
+                ? ElementDisplayOption.Visible 
+                : ElementDisplayOption.Collapsed);
+            _channelTextureSizeLabels[index] = textureSizeLabel;
+            verticalGroupLeft.Add(textureSizeLabel);
+            
+            VisualElement verticalGroupRight = new VisualElement();
+            verticalGroupRight.style.flexDirection = FlexDirection.Column;
+            verticalGroupRight.style.maxWidth = 64;
+            verticalGroupRight.style.minHeight = 64;
+            verticalGroupRight.style.justifyContent = Justify.FlexStart;
+            
+            verticalGroupRight.Add(previewImage);
+            verticalGroupRight.Add(textureSizeLabel);
+
+            topElement.Add(verticalGroupLeft);
+            topElement.Add(verticalGroupRight);
             parent.Add(topElement);
         }
     }

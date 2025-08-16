@@ -3,6 +3,9 @@
 struct ChannelData
 {
     int mask;
+    int width;
+    int height;
+    int samplingType;
     int invertValue;
     float scaler;
     float min;
@@ -11,16 +14,42 @@ struct ChannelData
 };
 
 StructuredBuffer<ChannelData> channelDataBuffer : register(t0);
-Texture2D inputR;
-Texture2D inputG;
-Texture2D inputB;
-Texture2D inputA;
+Texture2D inputR : register(t1);
+Texture2D inputG : register(t2);
+Texture2D inputB : register(t3);
+Texture2D inputA : register(t4);
 
 RWTexture2D<float4> result;
 
-float ResolveChannel(uint index, float4 pixel)
-{
+float ResolveChannel(uint index, uint2 id)
+{   
     ChannelData channelData = channelDataBuffer[index];
+
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+    switch(channelData.samplingType)
+    {
+        case 1:
+            id = uint2(id.x % channelData.width, id.y % channelData.height);
+            break;
+    }
+    
+    float4 pixel;
+    switch(index)
+    {
+        default:
+        case 0:
+            pixel = inputR[id.xy];
+            break;
+        case 1:
+            pixel = inputG[id.xy];
+            break;
+        case 2:
+            pixel = inputB[id.xy];
+            break;
+        case 3:
+            pixel = inputA[id.xy];
+            break;
+    }
 
     int defaultMask = !(channelData.mask << 1) & 1;
     int invertedDefaultMask = 1 - defaultMask;
@@ -32,14 +61,9 @@ float ResolveChannel(uint index, float4 pixel)
         + (channelData.mask >> 4 & 1) * pixel.a
     ) * invertedDefaultMask;
 
-    if(invertedDefaultMask)
-    {
-        if(channelData.invertValue)
-            result = 1 - result;
-
-        result *= channelData.scaler;
-        result = clamp(result, channelData.min, channelData.max);
-    }
+    result = lerp(result, 1 - result, channelData.invertValue);
+    result = lerp(result, result * channelData.scaler, invertedDefaultMask);
+    result = lerp(result, clamp(result, channelData.min, channelData.max), invertedDefaultMask);
     return result;
 }
 
@@ -48,9 +72,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     result[id.xy] = float4
     (
-        ResolveChannel(0, inputR[id.xy]),
-        ResolveChannel(1, inputG[id.xy]),
-        ResolveChannel(2, inputB[id.xy]),
-        ResolveChannel(3, inputA[id.xy])
+        ResolveChannel(0, id.xy),
+        ResolveChannel(1, id.xy),
+        ResolveChannel(2, id.xy),
+        ResolveChannel(3, id.xy)
     );
 }
