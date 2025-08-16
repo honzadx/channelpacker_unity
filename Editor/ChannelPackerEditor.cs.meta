@@ -1,3 +1,13 @@
 fileFormatVersion: 2
 guid: 0adf906c986d4fed80a6db055016eeff
-timeCreated: 1755291892
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_ViewDataDictionary: {instanceID: 0}
+  - _renderTextureGenerator: {fileID: 11400000, guid: 8ef7e239b70734fd6b7b7683178d558d, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

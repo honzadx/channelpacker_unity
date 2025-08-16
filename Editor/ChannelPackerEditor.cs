@@ -7,7 +7,6 @@ namespace AmeWorks.ChannelPacker.Editor
 {
     public class ChannelPackerEditor : EditorWindow
     {
-        private const string FILE_PICKER_ICON_PATH = "Packages/com.ameworks.channelpacker/Editor/Icons/FilePickerIcon.png";
         private const int MAX_RESOLUTION = 8192;
         private const int CHANNEL_COUNT = 4;
         private const float BASE_PADDING = 10.0f;
@@ -16,8 +15,8 @@ namespace AmeWorks.ChannelPacker.Editor
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
         private static readonly Color _backgroundColor = new (0.2f, 0.2f, 0.2f);
-        
-        private readonly ChannelPackerRTGenerator _renderTextureGenerator = new();
+
+        [SerializeField] private ChannelPackerRTGenerator _renderTextureGenerator;
         
         // Data
         private readonly float[] _channelDefaultValues = new float[CHANNEL_COUNT];
@@ -34,9 +33,6 @@ namespace AmeWorks.ChannelPacker.Editor
         private RenderTexture _resultRT;
         private RenderTexture _previewResultRT;
         private bool _isRTDirty;
-        
-        private string _outputDirectory = string.Empty;
-        private string _fileName = string.Empty;
         
         // Elements
         private readonly Label[] _channelTextureSizeLabels = new Label[CHANNEL_COUNT];
@@ -72,16 +68,20 @@ namespace AmeWorks.ChannelPacker.Editor
                 _channelMax, 
                 _channelTextures,
                 _samplingTypes,
-                _previewMasking
-            );
-            _renderTextureGenerator.RegenerateRenderTextures(ref _resultRT, ref _previewResultRT, _textureSize, RenderTextureFormat.ARGB32);
+                _previewMasking);
+            
+            _renderTextureGenerator.RegenerateRenderTextures(
+                ref _resultRT, 
+                ref _previewResultRT, 
+                _textureSize, 
+                RenderTextureFormat.ARGB32);
+            
             _previewResultImage.image = _previewResultRT;
             _isRTDirty = false;
         }
         
         private void Init()
         {
-            _renderTextureGenerator.Init();
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
                 _channelMasks[i] = ChannelMask.R;
@@ -303,49 +303,9 @@ namespace AmeWorks.ChannelPacker.Editor
                 _previewMasking = (ChannelMask)evt.newValue;
                 _isRTDirty = true;
             });
-            
-            VisualElement directoryPickerGroup = new VisualElement();
-            directoryPickerGroup.style.marginTop = BASE_PADDING * 2;
-            directoryPickerGroup.style.flexDirection = FlexDirection.Row;
-            directoryPickerGroup.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
-            directoryPickerGroup.style.justifyContent = Justify.FlexStart;
-            directoryPickerGroup.style.flexGrow = 1;
-            
-            TextField outputDirectoryField = new TextField("Output Directory");
-            outputDirectoryField.style.flexGrow = 1;
-            outputDirectoryField.value = _outputDirectory;
-            outputDirectoryField.RegisterValueChangedCallback(evt =>
-            {
-                _outputDirectory = evt.newValue;
-            });
-            outputDirectoryField.style.minWidth = WINDOW_WIDTH - BASE_PADDING * 3 - 25;
-            
-            Texture2D filePickerTexture = (Texture2D)EditorGUIUtility.Load(FILE_PICKER_ICON_PATH);
-            Background filePickerBackground = Background.FromTexture2D(filePickerTexture);
-            Button outputDirectoryButton = new Button(filePickerBackground,() =>
-            {
-                _outputDirectory = EditorUtility.OpenFolderPanel("Select a folder", _outputDirectory, "");
-                if (!string.IsNullOrEmpty(_outputDirectory))
-                {
-                    outputDirectoryField.value = _outputDirectory;
-                }
-            });
-            outputDirectoryButton.style.maxWidth = 25;
-            directoryPickerGroup.Add(outputDirectoryField);
-            directoryPickerGroup.Add(outputDirectoryButton);
-            
-            TextField fileNameField = new TextField("File Name");
-            fileNameField.value = _fileName;
-            fileNameField.RegisterValueChangedCallback(evt =>
-            {
-                _fileName = evt.newValue;
-            });
-            
-            Button exportButton = new Button(() =>
-            {
-                _resultRT.TryExportToPNG(_textureSize, _outputDirectory, _fileName);
-            });
-            exportButton.text = "Export PNG";
+
+            Button exportButton = new Button(ExportPackedTexture);
+            exportButton.text = "Export Packed Texture";
             
             var previewResultImage = new Image 
             {
@@ -362,10 +322,18 @@ namespace AmeWorks.ChannelPacker.Editor
 
             parent.Add(textureSizeField);
             parent.Add(previewFlagsField);
-            parent.Add(previewResultImage);
-            parent.Add(directoryPickerGroup);
-            parent.Add(fileNameField);
             parent.Add(exportButton);
+            parent.Add(previewResultImage);
+        }
+
+        private void ExportPackedTexture()
+        {
+            var path = EditorUtility.SaveFilePanelInProject(
+                title: "Export Packed Texture", 
+                defaultName: "image", 
+                extension: "png", 
+                message: string.Empty);
+            _resultRT.TryExportToPNG(_textureSize, path);
         }
     }
 }

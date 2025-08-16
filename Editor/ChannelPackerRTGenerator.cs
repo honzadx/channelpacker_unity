@@ -1,16 +1,9 @@
-using UnityEditor;
 using UnityEngine;
 
 namespace AmeWorks.ChannelPacker.Editor
 {
-    public class ChannelPackerRTGenerator
+    public class ChannelPackerRTGenerator : ScriptableObject
     {
-        private const string PACK_TEXTURE_COMPUTE_SHADER_PATH 
-            = "Packages/com.ameworks.channelpacker/Editor/PackTexture.compute";
-        private const string MASKING_PREVIEW_FILTER_COMPUTE_SHADER_PATH 
-            = "Packages/com.ameworks.channelpacker/Editor/MaskingPreviewFilter.compute";
-        private const int MAIN_KERNEL_ID = 0;
-        
         private static readonly int _channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
         private static readonly int _inputShaderID = Shader.PropertyToID("input");
         private static readonly int _maskShaderID = Shader.PropertyToID("mask");
@@ -20,18 +13,12 @@ namespace AmeWorks.ChannelPacker.Editor
         private static readonly int _inputAShaderID = Shader.PropertyToID("inputA");
         private static readonly int _resultShaderID = Shader.PropertyToID("result");
         
-        private readonly ChannelData[] _channelDatas = new ChannelData[4];
-
-        private Texture2D[] _channelTextures;
-        private ComputeShader _packTextureCS;
-        private ComputeShader _maskingPreviewFilterCS;
-        private ChannelMask _previewMasking;
+        [SerializeField] private ComputeShader _packTextureCS;
+        [SerializeField] private ComputeShader _maskingPreviewFilterCS;
         
-        public void Init()
-        {
-            _maskingPreviewFilterCS = AssetDatabase.LoadAssetAtPath<ComputeShader>(MASKING_PREVIEW_FILTER_COMPUTE_SHADER_PATH);
-            _packTextureCS = AssetDatabase.LoadAssetAtPath<ComputeShader>(PACK_TEXTURE_COMPUTE_SHADER_PATH);
-        }
+        private readonly ChannelData[] _channelDatas = new ChannelData[4];
+        private Texture2D[] _channelTextures;
+        private ChannelMask _previewMasking;
         
         public void SetData(
             float[]         defaultValues, 
@@ -87,20 +74,20 @@ namespace AmeWorks.ChannelPacker.Editor
             var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 4 + sizeof(int) * 5);
             channelDataBuffer.SetData(_channelDatas);
             
-            _packTextureCS.SetBuffer(MAIN_KERNEL_ID, _channelDataBufferShaderID, channelDataBuffer);
-            _packTextureCS.SetTexture(MAIN_KERNEL_ID, _inputRShaderID, _channelTextures[0] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(MAIN_KERNEL_ID, _inputGShaderID, _channelTextures[1] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(MAIN_KERNEL_ID, _inputBShaderID, _channelTextures[2] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(MAIN_KERNEL_ID, _inputAShaderID, _channelTextures[3] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(MAIN_KERNEL_ID, _resultShaderID, resultRT);
-            _packTextureCS.Dispatch(MAIN_KERNEL_ID, size.x, size.y, 1);
-            
-            _maskingPreviewFilterCS.SetVector(_maskShaderID, _previewMasking.ToVector4());
-            _maskingPreviewFilterCS.SetTexture(MAIN_KERNEL_ID, _inputShaderID, resultRT);
-            _maskingPreviewFilterCS.SetTexture(MAIN_KERNEL_ID, _resultShaderID, previewResultRT);
-            _maskingPreviewFilterCS.Dispatch(MAIN_KERNEL_ID, size.x, size.y, 1);
+            _packTextureCS.SetBuffer(0, _channelDataBufferShaderID, channelDataBuffer);
+            _packTextureCS.SetTexture(0, _inputRShaderID, _channelTextures[0] ?? Texture2D.blackTexture);
+            _packTextureCS.SetTexture(0, _inputGShaderID, _channelTextures[1] ?? Texture2D.blackTexture);
+            _packTextureCS.SetTexture(0, _inputBShaderID, _channelTextures[2] ?? Texture2D.blackTexture);
+            _packTextureCS.SetTexture(0, _inputAShaderID, _channelTextures[3] ?? Texture2D.blackTexture);
+            _packTextureCS.SetTexture(0, _resultShaderID, resultRT);
+            _packTextureCS.Dispatch(0, size.x, size.y, 1);
             
             channelDataBuffer.Release();
+
+            _maskingPreviewFilterCS.SetVector(_maskShaderID, _previewMasking.ToVector4());
+            _maskingPreviewFilterCS.SetTexture(0, _inputShaderID, resultRT);
+            _maskingPreviewFilterCS.SetTexture(0, _resultShaderID, previewResultRT);
+            _maskingPreviewFilterCS.Dispatch(0, size.x, size.y, 1);
         }
     }
 }
