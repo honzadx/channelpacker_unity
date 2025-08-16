@@ -1,9 +1,7 @@
 {
-    "name": "AmeWorks.ChannelPacker.Editor",
+    "name": "AmeWorks.ChromaPacker.Editor",
     "rootNamespace": "",
-    "references": [
-        "AmeWorks.ChannelPacker.Runtime"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

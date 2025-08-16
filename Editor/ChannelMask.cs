@@ -1,6 +1,6 @@
 using System;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
     [Flags]
     public enum ChannelMask

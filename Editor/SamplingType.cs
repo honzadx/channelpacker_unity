@@ -1,4 +1,4 @@
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
     public enum SamplingType
     {

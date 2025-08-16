@@ -1,8 +1,8 @@
 {
-  "name": "com.ameworks.channelpacker",
+  "name": "com.ameworks.chromapacker",
   "version": "1.0.0",
-  "displayName": "Channel Packer",
-  "description": "Merges multiple textures into one",
+  "displayName": "Chroma Packer",
+  "description": "Extracts chroma from multiple source textures into a single texture",
   "dependencies": {},
   "keywords": [],
   "author": {

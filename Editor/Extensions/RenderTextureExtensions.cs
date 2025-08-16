@@ -3,7 +3,7 @@ using System.IO;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
     public static class RenderTextureExtensions
     {

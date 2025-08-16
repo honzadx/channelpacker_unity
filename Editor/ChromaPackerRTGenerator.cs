@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
-    public class ChannelPackerRTGenerator : ScriptableObject
+    public class ChromaPackerRTGenerator : ScriptableObject
     {
         private static readonly int _channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
         private static readonly int _inputShaderID = Shader.PropertyToID("input");

@@ -1,6 +1,6 @@
 using UnityEngine.UIElements;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
     public static class VisualElementExtensions
     {

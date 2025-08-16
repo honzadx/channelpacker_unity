@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct ChannelData

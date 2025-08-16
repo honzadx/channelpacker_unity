@@ -1,4 +1,4 @@
-# Channel Packer
+# Chroma Packer
 A Unity Editor tool for combining multiple source textures into a single packed texture, with per-channel assignment (R, G, B, A). Great for optimizing texture usage in shaders (e.g. metallic/smoothness/ambient occlusion maps).
 
 

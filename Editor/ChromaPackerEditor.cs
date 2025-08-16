@@ -3,9 +3,9 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace AmeWorks.ChannelPacker.Editor
+namespace AmeWorks.ChromaPacker.Editor
 {
-    public class ChannelPackerEditor : EditorWindow
+    public class ChromaPackerEditor : EditorWindow
     {
         private const int MAX_RESOLUTION = 8192;
         private const int CHANNEL_COUNT = 4;
@@ -16,7 +16,7 @@ namespace AmeWorks.ChannelPacker.Editor
 
         private static readonly Color _backgroundColor = new (0.2f, 0.2f, 0.2f);
 
-        [SerializeField] private ChannelPackerRTGenerator _renderTextureGenerator;
+        [SerializeField] private ChromaPackerRTGenerator _renderTextureGenerator;
         
         // Data
         private readonly float[] _channelDefaultValues = new float[CHANNEL_COUNT];
@@ -41,11 +41,11 @@ namespace AmeWorks.ChannelPacker.Editor
         private readonly VisualElement[] _textureGroups = new VisualElement[CHANNEL_COUNT];
         private Image _previewResultImage;
         
-        [MenuItem("Tools/Channel Packer")]
+        [MenuItem("Tools/Chroma Packer")]
         public static void OpenWindow()
         {
-            ChannelPackerEditor wnd = GetWindow<ChannelPackerEditor>();
-            wnd.titleContent = new GUIContent("Channel Packer");
+            ChromaPackerEditor wnd = GetWindow<ChromaPackerEditor>();
+            wnd.titleContent = new GUIContent("Chroma Packer");
             wnd.minSize = new Vector2(WINDOW_WIDTH + 64, MIN_WINDOW_HEIGHT);
         }
 
