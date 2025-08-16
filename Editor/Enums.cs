@@ -10,4 +10,17 @@ namespace AmeWorks.ChromaPacker.Editor
         B = 1 << 3,
         A = 1 << 4,
     }
+    
+    public enum SamplingType
+    {
+        Once,
+        Repeat,
+    }
+    
+    public enum ElementVisibility
+    {
+        Collapsed,
+        Hidden, 
+        Visible
+    }
 }
