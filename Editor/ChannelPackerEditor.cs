@@ -27,7 +27,7 @@ namespace AmeWorks.ChannelPacker.Editor
         private readonly float[] _channelMin = new float[CHANNEL_COUNT];
         private readonly float[] _channelMax = new float[CHANNEL_COUNT];
 
-        private Vector2Int _resultRTSize = new (128, 128);
+        private Vector2Int _textureSize = new (128, 128);
         private RenderTexture _resultRT;
         private bool _isRTDirty;
         
@@ -65,7 +65,7 @@ namespace AmeWorks.ChannelPacker.Editor
                     _channelMax, 
                     _channelTextures
                 );
-                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _resultRTSize, RenderTextureFormat.ARGB32);
+                _channelPackerGenerator.UpdateRenderTexture(ref _resultRT, _textureSize, RenderTextureFormat.ARGB32);
                 _previewResultImage.image = _resultRT;
                 _isRTDirty = false;
             }
@@ -106,11 +106,13 @@ namespace AmeWorks.ChannelPacker.Editor
             AddChannelTextureElement(mainElementsGroup, 3);
 
             Vector2IntField textureSizeField = new Vector2IntField("Resolution");
-            textureSizeField.value = _resultRTSize;
+            textureSizeField.value = _textureSize;
             textureSizeField.style.marginTop = BASE_PADDING * 2;
             textureSizeField.RegisterValueChangedCallback(evt =>
             {
-                _resultRTSize = evt.newValue;
+                _textureSize.x = Mathf.Clamp(evt.newValue.x, 0, 8192);
+                _textureSize.y = Mathf.Clamp(evt.newValue.y, 0, 8192);
+                textureSizeField.value = _textureSize;
                 _isRTDirty = true;
             });
             
@@ -150,7 +152,7 @@ namespace AmeWorks.ChannelPacker.Editor
             });
             Button exportButton = new Button(() =>
             {
-                _channelPackerGenerator.ExportToPNG(_resultRT, _resultRTSize, _outputDirectory, _fileName);
+                _channelPackerGenerator.ExportToPNG(_resultRT, _textureSize, _outputDirectory, _fileName);
             });
             exportButton.text = "Export PNG";
             
