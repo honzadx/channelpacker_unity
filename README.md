@@ -13,6 +13,7 @@ Inspired by https://github.com/camobiwon/ChannelPacker/tree/main from Camobiwon
 
 ### Planned
 - Implement batch mode for bulk texture packing
+- Tests for RenderTexture blitting
 
 |       Preview 0        |       Preview 1        |
 |:----------------------:|:----------------------:|
