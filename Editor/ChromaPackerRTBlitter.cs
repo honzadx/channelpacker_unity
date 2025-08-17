@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace AmeWorks.ChromaPacker.Editor
 {
-    public class ChromaPackerRTGenerator : ScriptableObject
+    public class ChromaPackerRTBlitter : ScriptableObject
     {
         private static readonly int s_channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
         private static readonly int s_inputRShaderID = Shader.PropertyToID("inputR");
@@ -53,7 +53,7 @@ namespace AmeWorks.ChromaPacker.Editor
             m_previewMasking = previewMasking;
         }
         
-        public void RegenerateRenderTextures(
+        public void Blit(
             ref RenderTexture resultRT, 
             ref RenderTexture previewResultRT, 
             Vector2Int size, 

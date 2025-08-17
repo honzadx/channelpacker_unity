@@ -14,7 +14,7 @@ namespace AmeWorks.ChromaPacker.Editor
         private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
-        [SerializeField] private ChromaPackerRTGenerator m_renderTextureGenerator;
+        [SerializeField] private ChromaPackerRTBlitter m_renderTextureBlitter;
         
         // Data
         private readonly float[] m_channelDefaultValues     = new float[CHANNEL_COUNT];
@@ -58,7 +58,7 @@ namespace AmeWorks.ChromaPacker.Editor
             if (!m_isRTDirty)
                 return;
             
-            m_renderTextureGenerator.SetData(
+            m_renderTextureBlitter.SetData(
                 m_channelDefaultValues, 
                 m_channelMasks,
                 m_channelInverts, 
@@ -70,7 +70,7 @@ namespace AmeWorks.ChromaPacker.Editor
                 m_samplingTypes,
                 m_previewMasking);
             
-            m_renderTextureGenerator.RegenerateRenderTextures(
+            m_renderTextureBlitter.Blit(
                 ref m_resultRT, 
                 ref m_previewResultRT, 
                 m_textureSize, 
