@@ -23,8 +23,9 @@ namespace AmeWorks.ChromaPacker.Editor
         private readonly SamplingType[] m_samplingTypes     = new SamplingType[CHANNEL_COUNT];
         private readonly bool[] m_channelInverts            = new bool[CHANNEL_COUNT];
         private readonly float[] m_channelScalers           = new float[CHANNEL_COUNT];
-        private readonly Vector2[] m_channelClamp           = new Vector2[CHANNEL_COUNT];
-        private readonly Vector2[] m_channelClip            = new Vector2[CHANNEL_COUNT];
+        private readonly Vector2[] m_channelClamps          = new Vector2[CHANNEL_COUNT];
+        private readonly Vector2[] m_channelClips           = new Vector2[CHANNEL_COUNT];
+        private readonly Vector2Int[] m_channelOffsets      = new Vector2Int[CHANNEL_COUNT];
         
         private ChannelMask m_previewMasking = ChannelMask.R | ChannelMask.G | ChannelMask.B | ChannelMask.A;
         private Vector2Int m_textureSize = new (128, 128);
@@ -62,8 +63,9 @@ namespace AmeWorks.ChromaPacker.Editor
                 m_channelMasks,
                 m_channelInverts, 
                 m_channelScalers, 
-                m_channelClamp, 
-                m_channelClip, 
+                m_channelClamps, 
+                m_channelClips,
+                m_channelOffsets,
                 m_channelTextures,
                 m_samplingTypes,
                 m_previewMasking);
@@ -83,9 +85,10 @@ namespace AmeWorks.ChromaPacker.Editor
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
                 m_channelMasks[i] = ChannelMask.R;
-                m_channelClamp[i] = new Vector2(0, 1);
-                m_channelClip[i] = new Vector2(0, 1);
+                m_channelClamps[i] = new Vector2(0, 1);
+                m_channelClips[i] = new Vector2(0, 1);
                 m_channelScalers[i] = 1.0f;
+                m_channelOffsets[i] = Vector2Int.zero;
             }
             
             VisualElement root = rootVisualElement;
@@ -206,16 +209,23 @@ namespace AmeWorks.ChromaPacker.Editor
                     m_isRTDirty = true;
                 });
                 
-                MinMaxSlider clampSlider = new MinMaxSlider("Clamp", m_channelClamp[index].x, m_channelClamp[index].y, 0, 1);
+                MinMaxSlider clampSlider = new MinMaxSlider("Clamp", m_channelClamps[index].x, m_channelClamps[index].y, 0, 1);
                 clampSlider.RegisterValueChangedCallback(evt =>
                 {
-                    m_channelClamp[index] = evt.newValue;
+                    m_channelClamps[index] = evt.newValue;
                     m_isRTDirty = true;
                 });
-                MinMaxSlider clipSlider = new MinMaxSlider("Clip", m_channelClip[index].x, m_channelClip[index].y, 0, 1);
+                MinMaxSlider clipSlider = new MinMaxSlider("Clip", m_channelClips[index].x, m_channelClips[index].y, 0, 1);
                 clipSlider.RegisterValueChangedCallback(evt =>
                 {
-                    m_channelClip[index] = evt.newValue;
+                    m_channelClips[index] = evt.newValue;
+                    m_isRTDirty = true;
+                });
+                Vector2IntField offsetField = new Vector2IntField("Offset");
+                offsetField.value = m_channelOffsets[index];
+                offsetField.RegisterValueChangedCallback(evt =>
+                {
+                    m_channelOffsets[index] = evt.newValue;
                     m_isRTDirty = true;
                 });
                 EnumField samplingTypeField = new EnumField("Sampling Type", m_samplingTypes[index]);
@@ -234,6 +244,7 @@ namespace AmeWorks.ChromaPacker.Editor
                 textureGroup.Add(channelScalerField);
                 textureGroup.Add(clampSlider);
                 textureGroup.Add(clipSlider);
+                textureGroup.Add(offsetField);
                 textureGroup.Add(samplingTypeField);
                 
                 noTextureGroup.Add(defaultValueField);

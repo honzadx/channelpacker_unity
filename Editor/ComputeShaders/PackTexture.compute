@@ -2,14 +2,14 @@
 
 struct ChannelData
 {
+    int2 size;
+    int2 offset;
+    float2 clamp;
+    float2 clip;
     int mask;
-    int width;
-    int height;
     int samplingType;
     int invert;
     float scaler;
-    float2 clamp;
-    float2 clip;
     float defaultValue;
 };
 
@@ -25,11 +25,13 @@ inline float ResolveChannel(uint index, uint2 id)
 {   
     ChannelData channelData = channelDataBuffer[index];
 
+    id -= channelData.offset;
+
     // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
     switch(channelData.samplingType)
     {
         case 1:
-            id = uint2(id.x % channelData.width, id.y % channelData.height);
+            id = uint2(id.x % channelData.size.x, id.y % channelData.size.y);
             break;
     }
     

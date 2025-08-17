@@ -23,10 +23,11 @@ namespace AmeWorks.ChromaPacker.Editor
         public void SetData(
             float[]         defaultValues, 
             ChannelMask[]   channelMasks, 
-            bool[]          inverts, 
+            bool[]          channelInverts, 
             float[]         channelScalers, 
-            Vector2[]       channelClamp, 
-            Vector2[]       channelClip, 
+            Vector2[]       channelClamps, 
+            Vector2[]       channelClips,
+            Vector2Int[]    channelOffsets,
             Texture2D[]     channelTextures,
             SamplingType[]  samplingTypes,
             ChannelMask     previewMasking)
@@ -37,14 +38,14 @@ namespace AmeWorks.ChromaPacker.Editor
                 var textureIsValid = texture != null;
                 m_channelDatas[i] = new ChannelData
                 {
-                    mask            = textureIsValid    ? (int)channelMasks[i]     : 0,
-                    width           = textureIsValid    ? texture.width            : 0,
-                    height          = textureIsValid    ? texture.height           : 0,
-                    samplingType    = textureIsValid    ? (int)samplingTypes[i]    : 0,
-                    invert          = inverts[i]        ? 1                        : 0,
+                    size            = textureIsValid        ? new Vector2Int(texture.width, texture.height) : Vector2Int.zero,
+                    mask            = textureIsValid        ? (int)channelMasks[i]                          : 0,
+                    samplingType    = textureIsValid        ? (int)samplingTypes[i]                         : 0,
+                    invert          = channelInverts[i]     ? 1                                             : 0,
                     scaler          = channelScalers[i],
-                    clamp           = channelClamp[i],
-                    clip            = channelClip[i],
+                    clamp           = channelClamps[i],
+                    clip            = channelClips[i],
+                    offset          = channelOffsets[i],
                     defaultValue    = defaultValues[i],
                 };
             }
@@ -75,7 +76,7 @@ namespace AmeWorks.ChromaPacker.Editor
             previewResultRT.enableRandomWrite = true;
             previewResultRT.Create();
             
-            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 5);
+            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 7);
             channelDataBuffer.SetData(m_channelDatas);
             
             m_packTextureCS.SetBuffer(0, s_channelDataBufferShaderID, channelDataBuffer);
