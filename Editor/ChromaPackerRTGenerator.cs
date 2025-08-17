@@ -4,21 +4,21 @@ namespace AmeWorks.ChromaPacker.Editor
 {
     public class ChromaPackerRTGenerator : ScriptableObject
     {
-        private static readonly int _channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
-        private static readonly int _inputShaderID = Shader.PropertyToID("input");
-        private static readonly int _maskShaderID = Shader.PropertyToID("mask");
-        private static readonly int _inputRShaderID = Shader.PropertyToID("inputR");
-        private static readonly int _inputGShaderID = Shader.PropertyToID("inputG");
-        private static readonly int _inputBShaderID = Shader.PropertyToID("inputB");
-        private static readonly int _inputAShaderID = Shader.PropertyToID("inputA");
-        private static readonly int _resultShaderID = Shader.PropertyToID("result");
+        private static readonly int s_channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
+        private static readonly int s_inputShaderID = Shader.PropertyToID("input");
+        private static readonly int s_maskShaderID = Shader.PropertyToID("mask");
+        private static readonly int s_inputRShaderID = Shader.PropertyToID("inputR");
+        private static readonly int s_inputGShaderID = Shader.PropertyToID("inputG");
+        private static readonly int s_inputBShaderID = Shader.PropertyToID("inputB");
+        private static readonly int s_inputAShaderID = Shader.PropertyToID("inputA");
+        private static readonly int s_resultShaderID = Shader.PropertyToID("result");
         
-        [SerializeField] private ComputeShader _packTextureCS;
-        [SerializeField] private ComputeShader _maskingPreviewFilterCS;
+        [SerializeField] private ComputeShader m_packTextureCS;
+        [SerializeField] private ComputeShader m_maskingPreviewFilterCS;
         
-        private readonly ChannelData[] _channelDatas = new ChannelData[4];
-        private Texture2D[] _channelTextures;
-        private ChannelMask _previewMasking;
+        private readonly ChannelData[] m_channelDatas = new ChannelData[4];
+        private Texture2D[] m_channelTextures;
+        private ChannelMask m_previewMasking;
         
         public void SetData(
             float[]         defaultValues, 
@@ -31,11 +31,11 @@ namespace AmeWorks.ChromaPacker.Editor
             SamplingType[]  samplingTypes,
             ChannelMask     previewMasking)
         {
-            for (int i = 0; i < _channelDatas.Length; i++)
+            for (int i = 0; i < m_channelDatas.Length; i++)
             {
                 var texture = channelTextures[i];
                 var textureIsValid = texture != null;
-                _channelDatas[i] = new ChannelData
+                m_channelDatas[i] = new ChannelData
                 {
                     mask            = textureIsValid    ? (int)channelMasks[i]     : 0,
                     width           = textureIsValid    ? texture.width            : 0,
@@ -48,11 +48,15 @@ namespace AmeWorks.ChromaPacker.Editor
                     defaultValue    = defaultValues[i],
                 };
             }
-            _channelTextures = channelTextures;
-            _previewMasking = previewMasking;
+            m_channelTextures = channelTextures;
+            m_previewMasking = previewMasking;
         }
         
-        public void RegenerateRenderTextures(ref RenderTexture resultRT, ref RenderTexture previewResultRT, Vector2Int size, RenderTextureFormat format)
+        public void RegenerateRenderTextures(
+            ref RenderTexture resultRT, 
+            ref RenderTexture previewResultRT, 
+            Vector2Int size, 
+            RenderTextureFormat format)
         {
             if (size.x <= 0 || size.y <= 0)
                 return;
@@ -72,22 +76,22 @@ namespace AmeWorks.ChromaPacker.Editor
             previewResultRT.Create();
             
             var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 5);
-            channelDataBuffer.SetData(_channelDatas);
+            channelDataBuffer.SetData(m_channelDatas);
             
-            _packTextureCS.SetBuffer(0, _channelDataBufferShaderID, channelDataBuffer);
-            _packTextureCS.SetTexture(0, _inputRShaderID, _channelTextures[0] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(0, _inputGShaderID, _channelTextures[1] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(0, _inputBShaderID, _channelTextures[2] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(0, _inputAShaderID, _channelTextures[3] ?? Texture2D.blackTexture);
-            _packTextureCS.SetTexture(0, _resultShaderID, resultRT);
-            _packTextureCS.Dispatch(0, size.x, size.y, 1);
+            m_packTextureCS.SetBuffer(0, s_channelDataBufferShaderID, channelDataBuffer);
+            m_packTextureCS.SetTexture(0, s_inputRShaderID, m_channelTextures[0] ?? Texture2D.blackTexture);
+            m_packTextureCS.SetTexture(0, s_inputGShaderID, m_channelTextures[1] ?? Texture2D.blackTexture);
+            m_packTextureCS.SetTexture(0, s_inputBShaderID, m_channelTextures[2] ?? Texture2D.blackTexture);
+            m_packTextureCS.SetTexture(0, s_inputAShaderID, m_channelTextures[3] ?? Texture2D.blackTexture);
+            m_packTextureCS.SetTexture(0, s_resultShaderID, resultRT);
+            m_packTextureCS.Dispatch(0, size.x, size.y, 1);
             
             channelDataBuffer.Release();
 
-            _maskingPreviewFilterCS.SetVector(_maskShaderID, _previewMasking.ToVector4());
-            _maskingPreviewFilterCS.SetTexture(0, _inputShaderID, resultRT);
-            _maskingPreviewFilterCS.SetTexture(0, _resultShaderID, previewResultRT);
-            _maskingPreviewFilterCS.Dispatch(0, size.x, size.y, 1);
+            m_maskingPreviewFilterCS.SetVector(s_maskShaderID, m_previewMasking.ToVector4());
+            m_maskingPreviewFilterCS.SetTexture(0, s_inputShaderID, resultRT);
+            m_maskingPreviewFilterCS.SetTexture(0, s_resultShaderID, previewResultRT);
+            m_maskingPreviewFilterCS.Dispatch(0, size.x, size.y, 1);
         }
     }
 }
