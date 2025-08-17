@@ -4,7 +4,7 @@ using UnityEngine;
 namespace AmeWorks.ChromaPacker.Editor
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct ChannelData
+    internal struct ChannelData
     {
         public Vector2Int size;
         public Vector2Int offset;

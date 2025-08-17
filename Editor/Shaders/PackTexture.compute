@@ -13,12 +13,11 @@ struct ChannelData
     float defaultValue;
 };
 
-StructuredBuffer<ChannelData> channelDataBuffer : register(t0);
-Texture2D inputR                                : register(t1);
-Texture2D inputG                                : register(t2);
-Texture2D inputB                                : register(t3);
-Texture2D inputA                                : register(t4);
-
+StructuredBuffer<ChannelData> channelDataBuffer;
+Texture2D inputR : register(t0);
+Texture2D inputG : register(t1);
+Texture2D inputB : register(t2);
+Texture2D inputA : register(t3);
 RWTexture2D<float4> result;
 
 inline float ResolveChannel(uint index, uint2 id)

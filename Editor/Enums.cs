@@ -3,7 +3,7 @@ using System;
 namespace AmeWorks.ChromaPacker.Editor
 {
     [Flags]
-    public enum ChannelMask
+    internal enum ChannelMask
     {
         R = 1 << 1,
         G = 1 << 2,
@@ -11,13 +11,13 @@ namespace AmeWorks.ChromaPacker.Editor
         A = 1 << 4,
     }
     
-    public enum SamplingType
+    internal enum SamplingType
     {
         Once,
         Repeat,
     }
     
-    public enum ElementVisibility
+    internal enum ElementVisibility
     {
         Collapsed,
         Hidden, 

@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,11 +16,27 @@ namespace AmeWorks.ChromaPacker.Editor
         private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
-        [SerializeField] private ChromaPackerRTBlitter m_renderTextureBlitter;
+        private static readonly Color s_diffuseRed = new (1, 0.2f, 0.5f);
+        private static readonly Color s_diffuseGreen = new (0.25f, 0.85f, 0.5f);
+        private static readonly Color s_diffuseBlue = new (0.3f, 0.7f, 1f);
+        private static readonly Color s_darkerGrey = new (0.2f, 0.2f, 0.2f);
+        
+        private static readonly int s_channelDataShaderID = Shader.PropertyToID("channelDataBuffer");
+        private static readonly int s_inputRShaderID = Shader.PropertyToID("inputR");
+        private static readonly int s_inputGShaderID = Shader.PropertyToID("inputG");
+        private static readonly int s_inputBShaderID = Shader.PropertyToID("inputB");
+        private static readonly int s_inputAShaderID = Shader.PropertyToID("inputA");
+        private static readonly int s_resultShaderID = Shader.PropertyToID("result");
+        private static readonly int s_maskShaderID = Shader.PropertyToID("mask");
+        private static readonly int s_inputShaderID = Shader.PropertyToID("input");
+
+        [SerializeField] private ComputeShader m_packTextureCS;
+        [SerializeField] private ComputeShader m_maskingPreviewFilterCS;
         
         // Data
-        private readonly float[] m_channelDefaultValues     = new float[CHANNEL_COUNT];
+        private readonly ChannelData[] m_channelDataArray   = new ChannelData[CHANNEL_COUNT];
         private readonly Texture2D[] m_channelTextures      = new Texture2D[CHANNEL_COUNT];
+        private readonly float[] m_channelDefaultValues     = new float[CHANNEL_COUNT];
         private readonly ChannelMask[] m_channelMasks       = new ChannelMask[CHANNEL_COUNT];
         private readonly SamplingType[] m_samplingTypes     = new SamplingType[CHANNEL_COUNT];
         private readonly bool[] m_channelInverts            = new bool[CHANNEL_COUNT];
@@ -47,43 +65,15 @@ namespace AmeWorks.ChromaPacker.Editor
             wnd.titleContent = new GUIContent("Chroma Packer");
             wnd.minSize = new Vector2(WINDOW_WIDTH + 64, MIN_WINDOW_HEIGHT);
         }
-
-        private void Update()
-        {
-            UpdatePreviewIfDirty();
-        }
-
-        private void UpdatePreviewIfDirty()
-        {
-            if (!m_isRTDirty)
-                return;
-            
-            m_renderTextureBlitter.SetData(
-                m_channelDefaultValues, 
-                m_channelMasks,
-                m_channelInverts, 
-                m_channelScalers, 
-                m_channelClamps, 
-                m_channelClips,
-                m_channelOffsets,
-                m_channelTextures,
-                m_samplingTypes,
-                m_previewMasking);
-            
-            m_renderTextureBlitter.Blit(
-                ref m_resultRT, 
-                ref m_previewResultRT, 
-                m_textureSize, 
-                RenderTextureFormat.ARGB32);
-            
-            m_previewResultImage.image = m_previewResultRT;
-            m_isRTDirty = false;
-        }
         
+#region Create GUI
+        // Unity's CreateGUI is verbose...
+        // Next time it's either UXML assets or OnGUI's immediate mode rendering
         private void CreateGUI()
         {
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
+                m_channelDataArray[i] = new ChannelData();
                 m_channelMasks[i] = ChannelMask.R;
                 m_channelClamps[i] = new Vector2(0, 1);
                 m_channelClips[i] = new Vector2(0, 1);
@@ -101,13 +91,10 @@ namespace AmeWorks.ChromaPacker.Editor
             root.Add(scrollView);
             
             VisualElement mainElementsGroup = new VisualElement();
-            mainElementsGroup.style.flexDirection = FlexDirection.Column;
-            mainElementsGroup.style.marginTop = BASE_PADDING;
-            mainElementsGroup.style.marginLeft = BASE_PADDING;
-            mainElementsGroup.style.marginRight = BASE_PADDING;
-            mainElementsGroup.style.marginBottom = BASE_PADDING;
+            mainElementsGroup.SetMargin(BASE_PADDING, BASE_PADDING, BASE_PADDING, BASE_PADDING);
             mainElementsGroup.style.minWidth = WINDOW_WIDTH;
             mainElementsGroup.style.minHeight = 64;
+            mainElementsGroup.style.flexDirection = FlexDirection.Column;
             mainElementsGroup.style.justifyContent = Justify.FlexStart;
             
             CreateGUIInputChannels(mainElementsGroup);
@@ -128,23 +115,19 @@ namespace AmeWorks.ChromaPacker.Editor
                 var texture = m_channelTextures[index];
                 
                 VisualElement topElement = new VisualElement();
+                topElement.SetPadding(SMALL_PADDING, SMALL_PADDING, SMALL_PADDING, SMALL_PADDING);
                 topElement.style.marginTop = BASE_PADDING;
-                topElement.style.flexDirection = FlexDirection.Row;
                 topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
-                topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
-                topElement.style.paddingTop = SMALL_PADDING;
-                topElement.style.paddingBottom = SMALL_PADDING;
-                topElement.style.paddingLeft = SMALL_PADDING;
-                topElement.style.paddingRight = SMALL_PADDING;
+                topElement.style.backgroundColor = s_darkerGrey;
+                topElement.style.flexDirection = FlexDirection.Row;
                 topElement.style.justifyContent = Justify.Center;
                 
                 VisualElement verticalGroupLeft = new VisualElement();
-                verticalGroupLeft.style.flexDirection = FlexDirection.Column;
                 verticalGroupLeft.style.marginRight = BASE_PADDING;
                 verticalGroupLeft.style.minWidth = 200;
-                verticalGroupLeft.style.maxWidth = float.MaxValue;
                 verticalGroupLeft.style.minHeight = 64;
                 verticalGroupLeft.style.flexGrow = 1;
+                verticalGroupLeft.style.flexDirection = FlexDirection.Column;
                 verticalGroupLeft.style.justifyContent = Justify.FlexStart;
                 
                 VisualElement noTextureGroup = new VisualElement();
@@ -169,8 +152,7 @@ namespace AmeWorks.ChromaPacker.Editor
                     m_channelTextures[index] = newTexture;
                     m_previewImages[index].image = newTexture;
                     m_previewImages[index].style.backgroundColor = isTextureValid 
-                        ? new Color(0.2f, 0.2f, 0.2f) 
-                        : new Color(defaultValue, defaultValue, defaultValue);
+                        ? s_darkerGrey : ColorExtensions.NewGrayscale(defaultValue);
                     
                     m_noTextureGroups[index].SetVisibility(isTextureValid ? ElementVisibility.Collapsed : ElementVisibility.Visible);
                     m_textureGroups[index].SetVisibility(isTextureValid ? ElementVisibility.Visible : ElementVisibility.Collapsed);
@@ -186,7 +168,7 @@ namespace AmeWorks.ChromaPacker.Editor
                 {
                     var defaultValue = evt.newValue;
                     m_channelDefaultValues[index] = defaultValue;
-                    m_previewImages[index].style.backgroundColor = new Color(defaultValue, defaultValue, defaultValue);
+                    m_previewImages[index].style.backgroundColor = ColorExtensions.NewGrayscale(defaultValue);
                     m_isRTDirty = true;
                 });
                 EnumField channelEnumField = new EnumField("Channel Mask", m_channelMasks[index]);
@@ -234,10 +216,6 @@ namespace AmeWorks.ChromaPacker.Editor
                     m_samplingTypes[index] = (SamplingType)evt.newValue;
                     m_isRTDirty = true;
                 });
-    
-                verticalGroupLeft.Add(textureField);
-                verticalGroupLeft.Add(noTextureGroup);
-                verticalGroupLeft.Add(textureGroup);
                 
                 textureGroup.Add(channelEnumField);
                 textureGroup.Add(invertToggle);
@@ -249,7 +227,6 @@ namespace AmeWorks.ChromaPacker.Editor
                 
                 noTextureGroup.Add(defaultValueField);
     
-                var defaultValue = m_channelDefaultValues[index];
                 Image previewImage = m_previewImages[index] ?? new Image 
                 {
                     scaleMode = ScaleMode.ScaleToFit,
@@ -257,7 +234,7 @@ namespace AmeWorks.ChromaPacker.Editor
                         alignSelf       = Align.Center,
                         width           = 64,
                         height          = 64,
-                        backgroundColor = new Color(defaultValue, defaultValue, defaultValue),
+                        backgroundColor = ColorExtensions.NewGrayscale(m_channelDefaultValues[index]),
                     },
                     image = texture
                 };
@@ -268,26 +245,29 @@ namespace AmeWorks.ChromaPacker.Editor
                 textureSizeLabel.style.alignSelf = Align.Center;
                 textureSizeLabel.SetVisibility(texture != null ? ElementVisibility.Visible : ElementVisibility.Collapsed);
                 m_channelTextureSizeLabels[index] = textureSizeLabel;
-                verticalGroupLeft.Add(textureSizeLabel);
                 
                 VisualElement verticalGroupRight = new VisualElement();
-                verticalGroupRight.style.flexDirection = FlexDirection.Column;
                 verticalGroupRight.style.maxWidth = 64;
-                verticalGroupRight.style.minHeight = 64;
+                verticalGroupRight.style.flexDirection = FlexDirection.Column;
                 verticalGroupRight.style.justifyContent = Justify.FlexStart;
                 
                 VisualElement colorStripElement = new VisualElement();
+                colorStripElement.style.marginBottom = SMALL_PADDING;
                 colorStripElement.style.minHeight = 4;
-                colorStripElement.style.minWidth = 64;
-                colorStripElement.style.maxWidth = 64;
-                colorStripElement.style.marginBottom = 4;
+                colorStripElement.style.width = 64;
                 colorStripElement.style.backgroundColor = index switch
                 {
-                    1 => new Color(0.6f, 1, 0.1f),
-                    2 => new Color(0.1f, 0.7f, 0.9f),
+                    1 => s_diffuseGreen,
+                    2 => s_diffuseBlue,
                     3 => Color.white,
-                    _ => new Color(1, 0.2f, 0.4f),
+                    _ => s_diffuseRed
                 };
+                
+                verticalGroupLeft.Add(textureField);
+                verticalGroupLeft.Add(noTextureGroup);
+                verticalGroupLeft.Add(textureGroup);
+                verticalGroupLeft.Add(textureSizeLabel);
+                
                 verticalGroupRight.Add(colorStripElement);
                 verticalGroupRight.Add(previewImage);
                 verticalGroupRight.Add(textureSizeLabel);
@@ -331,7 +311,7 @@ namespace AmeWorks.ChromaPacker.Editor
                     height          = 256,
                     marginTop       = BASE_PADDING,
                     alignSelf       = Align.Center,
-                    backgroundColor = new Color(0.2f, 0.2f, 0.2f)
+                    backgroundColor = s_darkerGrey
                 },
             };
             previewResultImage.SetVisibility((int)m_previewMasking == 0 ? ElementVisibility.Collapsed : ElementVisibility.Visible);
@@ -350,15 +330,118 @@ namespace AmeWorks.ChromaPacker.Editor
             parent.Add(exportButton);
             parent.Add(resetButton);
         }
+#endregion Create GUI
+#region Update
+        private void Update()
+        {
+            UpdatePreview();
+        }
 
+        private void UpdatePreview()
+        {
+            if (!m_isRTDirty)
+                return;
+            
+            SetupBlitData();
+            Blit();
+            m_isRTDirty = false;
+            
+            void SetupBlitData()
+            {
+                for (int i = 0; i < m_channelDataArray.Length; i++)
+                {
+                    var texture = m_channelTextures[i];
+                    var textureIsValid = texture != null;
+                    m_channelDataArray[i] = new ChannelData
+                    {
+                        size            = textureIsValid        ? new Vector2Int(texture.width, texture.height) : Vector2Int.zero,
+                        mask            = textureIsValid        ? (int)m_channelMasks[i]                          : 0,
+                        samplingType    = textureIsValid        ? (int)m_samplingTypes[i]                         : 0,
+                        invert          = m_channelInverts[i]     ? 1                                             : 0,
+                        scaler          = m_channelScalers[i],
+                        clamp           = m_channelClamps[i],
+                        clip            = m_channelClips[i],
+                        offset          = m_channelOffsets[i],
+                        defaultValue    = m_channelDefaultValues[i],
+                    };
+                }
+            }
+
+            void Blit()
+            {
+                if (m_textureSize.x <= 0 || m_textureSize.y <= 0)
+                    return;
+
+                if (m_resultRT != null) 
+                    m_resultRT.Release();
+            
+                if (m_previewResultRT != null)
+                    m_previewResultRT.Release();
+            
+                m_resultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
+                m_resultRT.enableRandomWrite = true;
+                m_resultRT.Create();
+            
+                m_previewResultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
+                m_previewResultRT.enableRandomWrite = true;
+                m_previewResultRT.Create();
+            
+                var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 7);
+                channelDataBuffer.SetData(m_channelDataArray);
+            
+                m_packTextureCS.SetBuffer(0, s_channelDataShaderID, channelDataBuffer);
+                m_packTextureCS.SetTexture(0, s_inputRShaderID, m_channelTextures[0] ?? Texture2D.blackTexture);
+                m_packTextureCS.SetTexture(0, s_inputGShaderID, m_channelTextures[1] ?? Texture2D.blackTexture);
+                m_packTextureCS.SetTexture(0, s_inputBShaderID, m_channelTextures[2] ?? Texture2D.blackTexture);
+                m_packTextureCS.SetTexture(0, s_inputAShaderID, m_channelTextures[3] ?? Texture2D.blackTexture);
+                m_packTextureCS.SetTexture(0, s_resultShaderID, m_resultRT);
+                m_packTextureCS.Dispatch(0, m_textureSize.x, m_textureSize.y, 1);
+            
+                channelDataBuffer.Release();
+
+                m_maskingPreviewFilterCS.SetInts(s_maskShaderID, (int)m_previewMasking);
+                m_maskingPreviewFilterCS.SetTexture(0, s_inputShaderID, m_resultRT);
+                m_maskingPreviewFilterCS.SetTexture(0, s_resultShaderID, m_previewResultRT);
+                m_maskingPreviewFilterCS.Dispatch(0, m_textureSize.x, m_textureSize.y, 1);
+            
+                m_previewResultImage.image = m_previewResultRT;
+            }
+        }
+#endregion Update
+#region Button Events
         private void ExportPackedTexture()
         {
+            if (m_textureSize.x <= 0 || m_textureSize.y <= 0)
+                return;
+            
             var path = EditorUtility.SaveFilePanelInProject(
                 title: "Export Packed Texture", 
                 defaultName: "image", 
                 extension: "png", 
                 message: string.Empty);
-            m_resultRT.TryExportToPNG(m_textureSize, path);
+
+            if (path.Length == 0)
+                return;
+
+            Texture2D resultTexture = new Texture2D(m_textureSize.x, m_textureSize.y, TextureFormat.ARGB32, false);
+            var previousActiveRT = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = m_resultRT;
+                resultTexture.ReadPixels(new Rect(0, 0, m_textureSize.x, m_textureSize.y), 0, 0);
+                resultTexture.Apply();
+                byte[] bytes = resultTexture.EncodeToPNG();
+                File.WriteAllBytes(path, bytes);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            finally
+            {
+                RenderTexture.active = previousActiveRT;
+                DestroyImmediate(resultTexture);
+            }
         }
 
         private void ResetData()
@@ -367,5 +450,6 @@ namespace AmeWorks.ChromaPacker.Editor
             Close();
             OpenWindow();
         }
+#endregion Button Events
     }
 }

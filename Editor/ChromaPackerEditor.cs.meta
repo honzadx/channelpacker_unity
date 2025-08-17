@@ -5,7 +5,8 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - m_ViewDataDictionary: {instanceID: 0}
-  - m_renderTextureBlitter: {fileID: 11400000, guid: 8ef7e239b70734fd6b7b7683178d558d, type: 2}
+  - m_packTextureCS: {fileID: 7200000, guid: 73c4d9dc13514997929e38d899ab971b, type: 3}
+  - m_maskingPreviewFilterCS: {fileID: 7200000, guid: cf6f1be4893c46dea67cdcca98e7a43a, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
