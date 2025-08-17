@@ -95,7 +95,7 @@ namespace AmeWorks.ChromaPacker.Editor
             root.Add(scrollView);
             
             VisualElement mainElementsGroup = new VisualElement();
-            mainElementsGroup.SetMargin(BASE_PADDING, BASE_PADDING, BASE_PADDING, BASE_PADDING);
+            mainElementsGroup.SetMargin(BASE_PADDING);
             mainElementsGroup.style.minWidth = WINDOW_WIDTH;
             mainElementsGroup.style.minHeight = 64;
             mainElementsGroup.style.flexDirection = FlexDirection.Column;
@@ -119,12 +119,15 @@ namespace AmeWorks.ChromaPacker.Editor
                 var texture = m_channelTextures[index];
                 
                 VisualElement topElement = new VisualElement();
-                topElement.SetPadding(SMALL_PADDING, SMALL_PADDING, SMALL_PADDING, SMALL_PADDING);
+                topElement.SetBorderWidth(1);
+                topElement.SetBorderColor(Color.black);
+                topElement.SetPadding(SMALL_PADDING);
                 topElement.style.marginTop = BASE_PADDING;
                 topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
                 topElement.style.backgroundColor = s_darkerGrey;
                 topElement.style.flexDirection = FlexDirection.Row;
                 topElement.style.justifyContent = Justify.Center;
+
                 
                 VisualElement verticalGroupLeft = new VisualElement();
                 verticalGroupLeft.style.marginRight = BASE_PADDING;

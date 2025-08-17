@@ -5,12 +5,43 @@ namespace AmeWorks.ChromaPacker.Editor
 {
     internal static class VisualElementExtensions
     {
+        public static void SetBorderColor(this VisualElement self, Color color)
+        {
+            self.style.borderLeftColor = color;
+            self.style.borderRightColor = color;
+            self.style.borderTopColor = color;
+            self.style.borderBottomColor = color;
+        }
+
+        public static void SetBorderWidth(this VisualElement self, float width)
+        {
+            self.SetBorderWidth(width, width, width, width);
+        }
+        
+        public static void SetBorderWidth(this VisualElement self, float left, float right, float top, float bottom)
+        {
+            self.style.borderLeftWidth = left;
+            self.style.borderRightWidth = right;
+            self.style.borderTopWidth = top;
+            self.style.borderBottomWidth = bottom;
+        }
+        
+        public static void SetMargin(this VisualElement self, float width)
+        {
+            self.SetMargin(width, width, width, width);
+        }
+        
         public static void SetMargin(this VisualElement self, float left, float right, float top, float bottom)
         {
             self.style.marginLeft = left;
             self.style.marginRight = right;
             self.style.marginTop = top;
             self.style.marginBottom = bottom;
+        }
+        
+        public static void SetPadding(this VisualElement self, float width)
+        {
+            self.SetPadding(width, width, width, width);
         }
         
         public static void SetPadding(this VisualElement self, float left, float right, float top, float bottom)
