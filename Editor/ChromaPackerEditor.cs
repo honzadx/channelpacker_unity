@@ -125,7 +125,6 @@ namespace AmeWorks.ChromaPacker.Editor
                 
                 VisualElement topElement = new VisualElement();
                 topElement.style.flexDirection = FlexDirection.Row;
-                topElement.style.marginTop = BASE_PADDING;
                 topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
                 topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
                 topElement.style.paddingTop = SMALL_PADDING;
@@ -269,7 +268,19 @@ namespace AmeWorks.ChromaPacker.Editor
     
                 topElement.Add(verticalGroupLeft);
                 topElement.Add(verticalGroupRight);
-                
+
+                VisualElement colorStripElement = new VisualElement();
+                colorStripElement.style.marginTop = BASE_PADDING;
+                colorStripElement.style.minHeight = 2;
+                colorStripElement.style.flexGrow = 1;
+                colorStripElement.style.backgroundColor = index switch
+                {
+                    1 => Color.green,
+                    2 => Color.blue,
+                    3 => Color.white,
+                    _ => Color.red,
+                };
+                parent.Add(colorStripElement);
                 parent.Add(topElement);
             }
         }
