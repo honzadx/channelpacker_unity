@@ -124,6 +124,7 @@ namespace AmeWorks.ChromaPacker.Editor
                 var texture = _channelTextures[index];
                 
                 VisualElement topElement = new VisualElement();
+                topElement.style.marginTop = BASE_PADDING;
                 topElement.style.flexDirection = FlexDirection.Row;
                 topElement.style.minWidth = WINDOW_WIDTH - BASE_PADDING;
                 topElement.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f);
@@ -263,24 +264,25 @@ namespace AmeWorks.ChromaPacker.Editor
                 verticalGroupRight.style.minHeight = 64;
                 verticalGroupRight.style.justifyContent = Justify.FlexStart;
                 
+                VisualElement colorStripElement = new VisualElement();
+                colorStripElement.style.minHeight = 4;
+                colorStripElement.style.minWidth = 64;
+                colorStripElement.style.maxWidth = 64;
+                colorStripElement.style.marginBottom = 4;
+                colorStripElement.style.backgroundColor = index switch
+                {
+                    1 => new Color(0.6f, 1, 0.1f),
+                    2 => new Color(0.1f, 0.7f, 0.9f),
+                    3 => Color.white,
+                    _ => new Color(1, 0.2f, 0.4f),
+                };
+                verticalGroupRight.Add(colorStripElement);
                 verticalGroupRight.Add(previewImage);
                 verticalGroupRight.Add(textureSizeLabel);
     
                 topElement.Add(verticalGroupLeft);
                 topElement.Add(verticalGroupRight);
 
-                VisualElement colorStripElement = new VisualElement();
-                colorStripElement.style.marginTop = BASE_PADDING;
-                colorStripElement.style.minHeight = 6;
-                colorStripElement.style.maxWidth = 18;
-                colorStripElement.style.backgroundColor = index switch
-                {
-                    1 => Color.green,
-                    2 => Color.blue,
-                    3 => Color.white,
-                    _ => Color.red,
-                };
-                parent.Add(colorStripElement);
                 parent.Add(topElement);
             }
         }
@@ -305,6 +307,7 @@ namespace AmeWorks.ChromaPacker.Editor
             previewFlagsField.RegisterValueChangedCallback(evt =>
             {
                 _previewMasking = (ChannelMask)evt.newValue;
+                _previewResultImage.SetVisibility((int)_previewMasking == 0 ? ElementVisibility.Collapsed : ElementVisibility.Visible);
                 _isRTDirty = true;
             });
 
@@ -319,6 +322,7 @@ namespace AmeWorks.ChromaPacker.Editor
                     backgroundColor = new Color(0.2f, 0.2f, 0.2f)
                 },
             };
+            previewResultImage.SetVisibility((int)_previewMasking == 0 ? ElementVisibility.Collapsed : ElementVisibility.Visible);
             _previewResultImage = previewResultImage;
             
             Button exportButton = new Button(ExportPackedTexture);
