@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace AmeWorks.ChromaPacker.Editor
 {
@@ -11,8 +12,8 @@ namespace AmeWorks.ChromaPacker.Editor
         public int samplingType;
         public int invert;
         public float scaler;
-        public float min;
-        public float max;
+        public Vector2 clamp;
+        public Vector2 clip;
         public float defaultValue;
     }
 }

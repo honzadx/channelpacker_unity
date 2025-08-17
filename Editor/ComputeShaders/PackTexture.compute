@@ -8,8 +8,8 @@ struct ChannelData
     int samplingType;
     int invert;
     float scaler;
-    float min;
-    float max;
+    float2 clamp;
+    float2 clip;
     float defaultValue;
 };
 
@@ -52,18 +52,31 @@ inline float ResolveChannel(uint index, uint2 id)
     }
 
     int defaultMask = !(channelData.mask << 1) & 1;
-    int invertedDefaultMask = 1 - defaultMask;
+    int textureMask = 1 - defaultMask;
     float result = defaultMask * channelData.defaultValue
     + (
         (channelData.mask >> 1 & 1) * pixel.r
         + (channelData.mask >> 2 & 1) * pixel.g
         + (channelData.mask >> 3 & 1) * pixel.b
         + (channelData.mask >> 4 & 1) * pixel.a
-    ) * invertedDefaultMask;
+    ) * textureMask;
 
-    result = lerp(result, 1 - result, channelData.invert);
-    result = lerp(result, result * channelData.scaler, invertedDefaultMask);
-    result = lerp(result, clamp(result, channelData.min, channelData.max), invertedDefaultMask);
+    if(textureMask)
+    {
+        // invert
+        result = lerp(result, 1 - result, channelData.invert);
+        // scale
+        result = lerp(result, result * channelData.scaler, textureMask);
+
+        // clip
+        if(result >= channelData.clip.y)
+            result = 3.402823466e+38F;
+        else if(result <= channelData.clip.x)
+            result = 0;
+        
+        // clamp
+        result = lerp(result, clamp(result, channelData.clamp.x, channelData.clamp.y), textureMask);
+    }
     return result;
 }
 

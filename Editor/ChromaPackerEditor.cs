@@ -23,8 +23,8 @@ namespace AmeWorks.ChromaPacker.Editor
         private readonly SamplingType[] _samplingTypes = new SamplingType[CHANNEL_COUNT];
         private readonly bool[] _channelInverts = new bool[CHANNEL_COUNT];
         private readonly float[] _channelScalers = new float[CHANNEL_COUNT];
-        private readonly float[] _channelMin = new float[CHANNEL_COUNT];
-        private readonly float[] _channelMax = new float[CHANNEL_COUNT];
+        private readonly Vector2[] _channelClamp = new Vector2[CHANNEL_COUNT];
+        private readonly Vector2[] _channelClip = new Vector2[CHANNEL_COUNT];
         
         private ChannelMask _previewMasking = ChannelMask.R | ChannelMask.G | ChannelMask.B | ChannelMask.A;
         private Vector2Int _textureSize = new (128, 128);
@@ -62,8 +62,8 @@ namespace AmeWorks.ChromaPacker.Editor
                 _channelMasks,
                 _channelInverts, 
                 _channelScalers, 
-                _channelMin, 
-                _channelMax, 
+                _channelClamp, 
+                _channelClip, 
                 _channelTextures,
                 _samplingTypes,
                 _previewMasking);
@@ -83,7 +83,8 @@ namespace AmeWorks.ChromaPacker.Editor
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
                 _channelMasks[i] = ChannelMask.R;
-                _channelMax[i] = 1.0f;
+                _channelClamp[i] = new Vector2(0, 1);
+                _channelClip[i] = new Vector2(0, 1);
                 _channelScalers[i] = 1.0f;
             }
             
@@ -203,18 +204,17 @@ namespace AmeWorks.ChromaPacker.Editor
                     _channelScalers[index] = evt.newValue;
                     _isRTDirty = true;
                 });
-                FloatField channelMinField = new FloatField("Min");
-                channelMinField.value = _channelMin[index];
-                channelMinField.RegisterValueChangedCallback(evt =>
+                
+                MinMaxSlider clampSlider = new MinMaxSlider("Clamp", _channelClamp[index].x, _channelClamp[index].y, 0, 1);
+                clampSlider.RegisterValueChangedCallback(evt =>
                 {
-                    _channelMin[index] = evt.newValue;
+                    _channelClamp[index] = evt.newValue;
                     _isRTDirty = true;
                 });
-                FloatField channelMaxField = new FloatField("Max");
-                channelMaxField.value = _channelMax[index];
-                channelMaxField.RegisterValueChangedCallback(evt =>
+                MinMaxSlider clipSlider = new MinMaxSlider("Clip", _channelClip[index].x, _channelClip[index].y, 0, 1);
+                clipSlider.RegisterValueChangedCallback(evt =>
                 {
-                    _channelMax[index] = evt.newValue;
+                    _channelClip[index] = evt.newValue;
                     _isRTDirty = true;
                 });
                 EnumField samplingTypeField = new EnumField("Sampling Type", _samplingTypes[index]);
@@ -231,8 +231,8 @@ namespace AmeWorks.ChromaPacker.Editor
                 textureGroup.Add(channelEnumField);
                 textureGroup.Add(invertToggle);
                 textureGroup.Add(channelScalerField);
-                textureGroup.Add(channelMinField);
-                textureGroup.Add(channelMaxField);
+                textureGroup.Add(clampSlider);
+                textureGroup.Add(clipSlider);
                 textureGroup.Add(samplingTypeField);
                 
                 noTextureGroup.Add(defaultValueField);

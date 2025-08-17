@@ -25,8 +25,8 @@ namespace AmeWorks.ChromaPacker.Editor
             ChannelMask[]   channelMasks, 
             bool[]          inverts, 
             float[]         channelScalers, 
-            float[]         channelMin, 
-            float[]         channelMax, 
+            Vector2[]       channelClamp, 
+            Vector2[]       channelClip, 
             Texture2D[]     channelTextures,
             SamplingType[]  samplingTypes,
             ChannelMask     previewMasking)
@@ -43,8 +43,8 @@ namespace AmeWorks.ChromaPacker.Editor
                     samplingType    = textureIsValid    ? (int)samplingTypes[i]    : 0,
                     invert          = inverts[i]        ? 1                        : 0,
                     scaler          = channelScalers[i],
-                    min             = channelMin[i],
-                    max             = channelMax[i],
+                    clamp           = channelClamp[i],
+                    clip            = channelClip[i],
                     defaultValue    = defaultValues[i],
                 };
             }
@@ -71,7 +71,7 @@ namespace AmeWorks.ChromaPacker.Editor
             previewResultRT.enableRandomWrite = true;
             previewResultRT.Create();
             
-            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 4 + sizeof(int) * 5);
+            var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 5);
             channelDataBuffer.SetData(_channelDatas);
             
             _packTextureCS.SetBuffer(0, _channelDataBufferShaderID, channelDataBuffer);
