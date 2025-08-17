@@ -355,9 +355,9 @@ namespace AmeWorks.ChromaPacker.Editor
                     m_channelDataArray[i] = new ChannelData
                     {
                         size            = textureIsValid        ? new Vector2Int(texture.width, texture.height) : Vector2Int.zero,
-                        mask            = textureIsValid        ? (int)m_channelMasks[i]                          : 0,
-                        samplingType    = textureIsValid        ? (int)m_samplingTypes[i]                         : 0,
-                        invert          = m_channelInverts[i]     ? 1                                             : 0,
+                        mask            = textureIsValid        ? (int)m_channelMasks[i]                        : 0,
+                        samplingType    = textureIsValid        ? (int)m_samplingTypes[i]                       : 0,
+                        invert          = m_channelInverts[i]   ? 1                                             : 0,
                         scaler          = m_channelScalers[i],
                         clamp           = m_channelClamps[i],
                         clip            = m_channelClips[i],

@@ -1,5 +1,7 @@
 #pragma kernel CSMain
 
+#include "Includes/MaskPacking.hlsl"
+
 struct ChannelData
 {
     int2 size;
@@ -25,58 +27,32 @@ inline float ResolveChannel(uint index, uint2 id)
     ChannelData channelData = channelDataBuffer[index];
 
     id -= channelData.offset;
+    id = lerp(id, id % channelData.size , channelData.samplingType);
 
-    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
-    switch(channelData.samplingType)
-    {
-        case 1:
-            id = uint2(id.x % channelData.size.x, id.y % channelData.size.y);
-            break;
-    }
+    int4 unpackedMask = UnpackMask(channelData.mask);
+
+    float4 pixel = (index == 0) * inputR[id.xy]
+                 + (index == 1) * inputG[id.xy]
+                 + (index == 2) * inputB[id.xy]
+                 + (index == 3) * inputA[id.xy];
+
+    float textureValue = unpackedMask.r * pixel.r
+                       + unpackedMask.g * pixel.g
+                       + unpackedMask.b * pixel.b
+                       + unpackedMask.a * pixel.a;
     
-    float4 pixel;
-    switch(index)
-    {
-        default:
-        case 0:
-            pixel = inputR[id.xy];
-            break;
-        case 1:
-            pixel = inputG[id.xy];
-            break;
-        case 2:
-            pixel = inputB[id.xy];
-            break;
-        case 3:
-            pixel = inputA[id.xy];
-            break;
-    }
-
     int defaultMask = !(channelData.mask << 1) & 1;
     int textureMask = 1 - defaultMask;
-    float result = defaultMask * channelData.defaultValue
-    + (
-        (channelData.mask >> 1 & 1) * pixel.r
-        + (channelData.mask >> 2 & 1) * pixel.g
-        + (channelData.mask >> 3 & 1) * pixel.b
-        + (channelData.mask >> 4 & 1) * pixel.a
-    ) * textureMask;
-
-    if(textureMask)
-    {
-        result = lerp(result, 1 - result, channelData.invert);
-        result = lerp(result, result * channelData.scaler, textureMask);
-
-        if(result >= channelData.clip.y)
-            result = 1;
-        else if(result <= channelData.clip.x)
-            result = 0;
-
-        result = lerp(result, clamp(result, channelData.clamp.x, channelData.clamp.y), textureMask);
-    }
+    float result = lerp(channelData.defaultValue, textureValue, textureMask);
+    result = lerp(result, 1 - result, channelData.invert);
+    result = lerp(result, result * channelData.scaler, textureMask);
+    float aboveMin = min(step(channelData.clip.x, result), 1);
+    float belowMax = min(step(result, channelData.clip.y), 1);
+    result = lerp(result, result * belowMax * aboveMin + (1 - belowMax) * 1, textureMask);
+    result = lerp(result, clamp(result, channelData.clamp.x, channelData.clamp.y), textureMask);
     return result;
 }
-
+ 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
