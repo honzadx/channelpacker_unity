@@ -46,6 +46,7 @@ namespace AmeWorks.ChromaPacker.Editor
         private readonly Vector2[] m_channelClips           = new Vector2[CHANNEL_COUNT];
         private readonly Vector2Int[] m_channelOffsets      = new Vector2Int[CHANNEL_COUNT];
         
+        private FilterMode m_filterMode = FilterMode.Bilinear;
         private ChannelMask m_previewMasking = ChannelMask.R | ChannelMask.G | ChannelMask.B | ChannelMask.A;
         private Vector2Int m_textureSize = new (128, 128);
         private RenderTexture m_resultRT;
@@ -294,14 +295,29 @@ namespace AmeWorks.ChromaPacker.Editor
             textureSizeField.RegisterValueChangedCallback(evt =>
             {
                 var sanitizedResolution = new Vector2Int(
-                    Mathf.Clamp(evt.newValue.x, 1, MAX_RESOLUTION),
-                    Mathf.Clamp(evt.newValue.y, 1, MAX_RESOLUTION));
+                    Mathf.Clamp(evt.newValue.x, 0, MAX_RESOLUTION),
+                    Mathf.Clamp(evt.newValue.y, 0, MAX_RESOLUTION));
 
                 textureSizeField.value = sanitizedResolution;
                 m_textureSize = sanitizedResolution;
                 m_isRTDirty = true;
             });
 
+            EnumField filterModeField = new EnumField("Filter Mode", m_filterMode);
+            filterModeField.RegisterValueChangedCallback(evt =>
+            {
+                m_filterMode = (FilterMode)evt.newValue;
+                
+                if (m_resultRT != null)
+                {
+                    m_resultRT.Release();
+                    m_resultRT = null;
+                    m_previewResultRT.Release();
+                    m_previewResultRT = null;
+                }
+                m_isRTDirty = true;
+            });
+            
             EnumFlagsField previewFlagsField = new EnumFlagsField("Preview Filter", m_previewMasking);
             previewFlagsField.RegisterValueChangedCallback(evt =>
             {
@@ -332,6 +348,7 @@ namespace AmeWorks.ChromaPacker.Editor
             resetButton.text = "Reset Data";
 
             parent.Add(textureSizeField);
+            parent.Add(filterModeField);
             parent.Add(previewFlagsField);
             parent.Add(previewResultImage);
             parent.Add(exportButton);
@@ -382,21 +399,23 @@ namespace AmeWorks.ChromaPacker.Editor
                     m_previewResultRT = null;
                 }
 
-                if (m_resultRT == null && m_textureSize != Vector2Int.zero)
+                if (m_resultRT == null && m_textureSize.x > 0 && m_textureSize.y > 0)
                 {
                     m_resultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
                     m_resultRT.enableRandomWrite = true;
+                    m_resultRT.filterMode = m_filterMode;
                     m_resultRT.Create();
             
                     m_previewResultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
                     m_previewResultRT.enableRandomWrite = true;
+                    m_previewResultRT.filterMode = m_filterMode;
                     m_previewResultRT.Create();
                 }
             }
 
             void Blit()
             {
-                if (m_textureSize == Vector2Int.zero) 
+                if (m_textureSize.x <= 0 || m_textureSize.y <= 0) 
                     return;
 
                 var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 7);
