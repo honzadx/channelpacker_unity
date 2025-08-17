@@ -11,6 +11,9 @@ Inspired by https://github.com/camobiwon/ChannelPacker/tree/main from Camobiwon
 - Real-time preview of the packed texture with configurable filtering options
 - Export your packed texture in PNG format
 
+### Planned
+- Implement batch mode for bulk texture packing
+
 |       Preview 0        |       Preview 1        |
 |:----------------------:|:----------------------:|
 | ![image](Preview0.png) | ![image](Preview1.png) |

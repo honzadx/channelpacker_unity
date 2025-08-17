@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9ebcf7bdaa1458ca265d5e8ea817b1f, type: 3}
   m_Name: ChannelPackerRTGenerator
   m_EditorClassIdentifier: 
-  _packTextureCS: {fileID: 0}
-  _maskingPreviewFilterCS: {fileID: 0}
+  _packTextureCS: {fileID: 7200000, guid: 73c4d9dc13514997929e38d899ab971b, type: 3}
+  _maskingPreviewFilterCS: {fileID: 7200000, guid: cf6f1be4893c46dea67cdcca98e7a43a, type: 3}

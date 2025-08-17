@@ -99,9 +99,10 @@ namespace AmeWorks.ChromaPacker.Editor
             
             VisualElement mainElementsGroup = new VisualElement();
             mainElementsGroup.style.flexDirection = FlexDirection.Column;
-            mainElementsGroup.style.marginTop = 10;
+            mainElementsGroup.style.marginTop = BASE_PADDING;
             mainElementsGroup.style.marginLeft = BASE_PADDING;
             mainElementsGroup.style.marginRight = BASE_PADDING;
+            mainElementsGroup.style.marginBottom = BASE_PADDING;
             mainElementsGroup.style.minWidth = WINDOW_WIDTH;
             mainElementsGroup.style.minHeight = 64;
             mainElementsGroup.style.justifyContent = Justify.FlexStart;

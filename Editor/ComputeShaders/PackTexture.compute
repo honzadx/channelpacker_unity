@@ -63,18 +63,14 @@ inline float ResolveChannel(uint index, uint2 id)
 
     if(textureMask)
     {
-        // invert
         result = lerp(result, 1 - result, channelData.invert);
-        // scale
         result = lerp(result, result * channelData.scaler, textureMask);
 
-        // clip
         if(result >= channelData.clip.y)
-            result = 3.402823466e+38F;
+            result = 1;
         else if(result <= channelData.clip.x)
             result = 0;
-        
-        // clamp
+
         result = lerp(result, clamp(result, channelData.clamp.x, channelData.clamp.y), textureMask);
     }
     return result;
