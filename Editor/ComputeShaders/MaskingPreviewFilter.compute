@@ -1,29 +1,33 @@
 #pragma kernel CSMain
 
-float4 mask;
+#include "MaskPacking.hlsl"
+
+int mask;
 Texture2D input : register(t0);
 RWTexture2D<float4> result;
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    int channelCount = (int)(mask.x + mask.y + mask.z + mask.w);
+    int4 unpackedMask = UnpackMask(mask);
+    int channelCount = unpackedMask.x + unpackedMask.y + unpackedMask.z + unpackedMask.w;
+
     float4 pixel = input[id.xy];
     switch (channelCount)
     {
         case 1:
-            if(mask.x > 0)
+            if(unpackedMask.x > 0)
                 pixel = float4(pixel.r, pixel.r, pixel.r, 1);
-            else if(mask.y > 0)
+            else if(unpackedMask.y > 0)
                 pixel = float4(pixel.g, pixel.g, pixel.g, 1);
-            else if(mask.z > 0)
+            else if(unpackedMask.z > 0)
                 pixel = float4(pixel.b, pixel.b, pixel.b, 1);
             else
                 pixel = float4(pixel.a, pixel.a, pixel.a, 1);
             break;
         default:
-            pixel *= mask;
-            if(mask.w == 0)
+            pixel *= unpackedMask;
+            if(unpackedMask.w == 0)
                 pixel.a = 1;
             break;
     }

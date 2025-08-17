@@ -5,13 +5,13 @@ namespace AmeWorks.ChromaPacker.Editor
     public class ChromaPackerRTGenerator : ScriptableObject
     {
         private static readonly int s_channelDataBufferShaderID = Shader.PropertyToID("channelDataBuffer");
-        private static readonly int s_inputShaderID = Shader.PropertyToID("input");
-        private static readonly int s_maskShaderID = Shader.PropertyToID("mask");
         private static readonly int s_inputRShaderID = Shader.PropertyToID("inputR");
         private static readonly int s_inputGShaderID = Shader.PropertyToID("inputG");
         private static readonly int s_inputBShaderID = Shader.PropertyToID("inputB");
         private static readonly int s_inputAShaderID = Shader.PropertyToID("inputA");
         private static readonly int s_resultShaderID = Shader.PropertyToID("result");
+        private static readonly int s_maskShaderID = Shader.PropertyToID("mask");
+        private static readonly int s_inputShaderID = Shader.PropertyToID("input");
         
         [SerializeField] private ComputeShader m_packTextureCS;
         [SerializeField] private ComputeShader m_maskingPreviewFilterCS;
@@ -89,7 +89,7 @@ namespace AmeWorks.ChromaPacker.Editor
             
             channelDataBuffer.Release();
 
-            m_maskingPreviewFilterCS.SetVector(s_maskShaderID, m_previewMasking.ToVector4());
+            m_maskingPreviewFilterCS.SetInts(s_maskShaderID, (int)m_previewMasking);
             m_maskingPreviewFilterCS.SetTexture(0, s_inputShaderID, resultRT);
             m_maskingPreviewFilterCS.SetTexture(0, s_resultShaderID, previewResultRT);
             m_maskingPreviewFilterCS.Dispatch(0, size.x, size.y, 1);
