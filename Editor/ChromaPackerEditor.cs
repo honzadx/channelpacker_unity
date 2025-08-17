@@ -26,12 +26,13 @@ namespace AmeWorks.ChromaPacker.Editor
         private static readonly int s_inputGShaderID = Shader.PropertyToID("inputG");
         private static readonly int s_inputBShaderID = Shader.PropertyToID("inputB");
         private static readonly int s_inputAShaderID = Shader.PropertyToID("inputA");
-        private static readonly int s_resultShaderID = Shader.PropertyToID("result");
-        private static readonly int s_maskShaderID = Shader.PropertyToID("mask");
-        private static readonly int s_inputShaderID = Shader.PropertyToID("input");
+        private static readonly int s_mainTextureShaderID = Shader.PropertyToID("mainTexture");
+        private static readonly int s_previewTextureShaderID = Shader.PropertyToID("previewTexture");
+        private static readonly int s_previewMaskShaderID = Shader.PropertyToID("previewMask");
 
-        [SerializeField] private ComputeShader m_packTextureCS;
-        [SerializeField] private ComputeShader m_maskingPreviewFilterCS;
+        [SerializeField] private ComputeShader m_chromaPackerCS;
+        private int m_kernelRenderMainID;
+        private int m_kernelRenderPreviewID;
         
         // Data
         private readonly ChannelData[] m_channelDataArray   = new ChannelData[CHANNEL_COUNT];
@@ -71,6 +72,9 @@ namespace AmeWorks.ChromaPacker.Editor
         // Next time it's either UXML assets or OnGUI's immediate mode rendering
         private void CreateGUI()
         {
+            m_kernelRenderMainID = m_chromaPackerCS.FindKernel("CSRenderMain");
+            m_kernelRenderPreviewID = m_chromaPackerCS.FindKernel("CSRenderPreview");
+            
             for (int i = 0; i < CHANNEL_COUNT; i++)
             {
                 m_channelDataArray[i] = new ChannelData();
@@ -398,21 +402,21 @@ namespace AmeWorks.ChromaPacker.Editor
                 var threadCountX = Mathf.CeilToInt(m_textureSize.x / 32.0f);
                 var threadCountY = Mathf.CeilToInt(m_textureSize.y / 32.0f);
             
-                m_packTextureCS.SetBuffer(0, s_channelDataShaderID, channelDataBuffer);
-                m_packTextureCS.SetTexture(0, s_inputRShaderID, m_channelTextures[0] ?? Texture2D.blackTexture);
-                m_packTextureCS.SetTexture(0, s_inputGShaderID, m_channelTextures[1] ?? Texture2D.blackTexture);
-                m_packTextureCS.SetTexture(0, s_inputBShaderID, m_channelTextures[2] ?? Texture2D.blackTexture);
-                m_packTextureCS.SetTexture(0, s_inputAShaderID, m_channelTextures[3] ?? Texture2D.blackTexture);
-                m_packTextureCS.SetTexture(0, s_resultShaderID, m_resultRT);
-                m_packTextureCS.Dispatch(0, threadCountX, threadCountY, 1);
-            
+                m_chromaPackerCS.SetBuffer(m_kernelRenderMainID, s_channelDataShaderID, channelDataBuffer);
+                m_chromaPackerCS.SetTexture(m_kernelRenderMainID, s_inputRShaderID, m_channelTextures[0] ?? Texture2D.blackTexture);
+                m_chromaPackerCS.SetTexture(m_kernelRenderMainID, s_inputGShaderID, m_channelTextures[1] ?? Texture2D.blackTexture);
+                m_chromaPackerCS.SetTexture(m_kernelRenderMainID, s_inputBShaderID, m_channelTextures[2] ?? Texture2D.blackTexture);
+                m_chromaPackerCS.SetTexture(m_kernelRenderMainID, s_inputAShaderID, m_channelTextures[3] ?? Texture2D.blackTexture);
+                m_chromaPackerCS.SetTexture(m_kernelRenderMainID, s_mainTextureShaderID, m_resultRT);
+                m_chromaPackerCS.SetTexture(m_kernelRenderPreviewID, s_mainTextureShaderID, m_resultRT);
+                m_chromaPackerCS.SetTexture(m_kernelRenderPreviewID, s_previewTextureShaderID, m_previewResultRT);
+                m_chromaPackerCS.SetInts(s_previewMaskShaderID, (int)m_previewMasking);
+                
+                m_chromaPackerCS.Dispatch(m_kernelRenderMainID, threadCountX, threadCountY, 1);
+                m_chromaPackerCS.Dispatch(m_kernelRenderPreviewID, threadCountX, threadCountY, 1);
+
                 channelDataBuffer.Release();
 
-                m_maskingPreviewFilterCS.SetInts(s_maskShaderID, (int)m_previewMasking);
-                m_maskingPreviewFilterCS.SetTexture(0, s_inputShaderID, m_resultRT);
-                m_maskingPreviewFilterCS.SetTexture(0, s_resultShaderID, m_previewResultRT);
-                m_maskingPreviewFilterCS.Dispatch(0, threadCountX, threadCountY, 1);
-                
                 m_previewResultImage.image = m_previewResultRT;
             }
         }

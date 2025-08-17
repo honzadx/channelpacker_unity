@@ -1,4 +1,5 @@
-#pragma kernel CSMain
+#pragma kernel CSRenderMain
+#pragma kernel CSRenderPreview
 
 #include "Includes/MaskPacking.hlsl"
 
@@ -15,12 +16,21 @@ struct ChannelData
     float defaultValue;
 };
 
+// I: CSRenderMain
 StructuredBuffer<ChannelData> channelDataBuffer;
 Texture2D inputR : register(t0);
 Texture2D inputG : register(t1);
 Texture2D inputB : register(t2);
 Texture2D inputA : register(t3);
-RWTexture2D<float4> result;
+
+// O: CSRenderMain, I: CSRenderPreview
+RWTexture2D<float4> mainTexture; 
+
+// I: CSRenderPreview
+int previewMask;
+
+// O: CSRenderPreview
+RWTexture2D<float4> previewTexture;
 
 inline float ResolveChannel(uint index, uint2 id)
 {   
@@ -58,13 +68,28 @@ inline float ResolveChannel(uint index, uint2 id)
 }
  
 [numthreads(32,32,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSRenderMain (uint3 id : SV_DispatchThreadID)
 {
-    result[id.xy] = float4
+    mainTexture[id.xy] = float4
     (
         ResolveChannel(0, id.xy),
         ResolveChannel(1, id.xy),
         ResolveChannel(2, id.xy),
         ResolveChannel(3, id.xy)
     );
+}
+
+[numthreads(32,32,1)]
+void CSRenderPreview (uint3 id : SV_DispatchThreadID)
+{
+    int4 unpackedMask = UnpackMask(previewMask);
+    int t = saturate(unpackedMask.x + unpackedMask.y + unpackedMask.z + unpackedMask.w - 1);
+    float4 pixel = mainTexture[id.xy];
+    float4 oneChannel = (unpackedMask.r == 1) * float4(pixel.rrr, 1)
+                      + (unpackedMask.g == 1) * float4(pixel.ggg, 1)
+                      + (unpackedMask.b == 1) * float4(pixel.bbb, 1)
+                      + (unpackedMask.a == 1) * float4(pixel.aaa, 1);
+    float4 multiChannel = pixel * unpackedMask;
+    multiChannel.a = lerp(1 , pixel.a, unpackedMask.w);
+    previewTexture[id.xy] = lerp(oneChannel, multiChannel, t);
 }
