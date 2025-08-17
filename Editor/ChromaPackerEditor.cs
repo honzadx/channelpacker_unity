@@ -297,9 +297,6 @@ namespace AmeWorks.ChromaPacker.Editor
                 _isRTDirty = true;
             });
 
-            Button exportButton = new Button(ExportPackedTexture);
-            exportButton.text = "Export Packed Texture";
-            
             var previewResultImage = new Image 
             {
                 scaleMode = ScaleMode.ScaleToFit,
@@ -312,11 +309,19 @@ namespace AmeWorks.ChromaPacker.Editor
                 },
             };
             _previewResultImage = previewResultImage;
+            
+            Button exportButton = new Button(ExportPackedTexture);
+            exportButton.style.marginTop = BASE_PADDING;
+            exportButton.text = "Export Packed Texture";
+            
+            Button resetButton = new Button(ResetData);
+            resetButton.text = "Reset Data";
 
             parent.Add(textureSizeField);
             parent.Add(previewFlagsField);
-            parent.Add(exportButton);
             parent.Add(previewResultImage);
+            parent.Add(exportButton);
+            parent.Add(resetButton);
         }
 
         private void ExportPackedTexture()
@@ -327,6 +332,13 @@ namespace AmeWorks.ChromaPacker.Editor
                 extension: "png", 
                 message: string.Empty);
             _resultRT.TryExportToPNG(_textureSize, path);
+        }
+
+        private void ResetData()
+        {
+            // I'm lazy ^_^
+            Close();
+            OpenWindow();
         }
     }
 }
