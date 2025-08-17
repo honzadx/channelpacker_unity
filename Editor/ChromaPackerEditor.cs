@@ -271,8 +271,8 @@ namespace AmeWorks.ChromaPacker.Editor
 
                 VisualElement colorStripElement = new VisualElement();
                 colorStripElement.style.marginTop = BASE_PADDING;
-                colorStripElement.style.minHeight = 2;
-                colorStripElement.style.flexGrow = 1;
+                colorStripElement.style.minHeight = 6;
+                colorStripElement.style.maxWidth = 18;
                 colorStripElement.style.backgroundColor = index switch
                 {
                     1 => Color.green,

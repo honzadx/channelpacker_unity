@@ -7,6 +7,7 @@ Inspired by https://github.com/camobiwon/ChannelPacker/tree/main from Camobiwon
 - Assign input textures to specific output channels (R, G, B, A)
 - Optional channel input adjustments: inversion, scaling, clipping and clamping
 - Supports repeat texture sampling mode
+- Accepts input textures in varying dimensions
 - Real-time preview of the packed texture with configurable filtering options
 - Export your packed texture in PNG format
 
