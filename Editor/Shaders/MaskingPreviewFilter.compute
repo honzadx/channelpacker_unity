@@ -6,24 +6,17 @@ int mask;
 Texture2D input : register(t0);
 RWTexture2D<float4> result;
 
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     int4 unpackedMask = UnpackMask(mask);
-    int channelCount = unpackedMask.x + unpackedMask.y + unpackedMask.z + unpackedMask.w;
+    int t = saturate(unpackedMask.x + unpackedMask.y + unpackedMask.z + unpackedMask.w - 1);
     float4 pixel = input[id.xy];
-    switch (channelCount)
-    {
-        case 1:
-            pixel = (unpackedMask.r == 1) * float4(pixel.r, pixel.r, pixel.r, 1)
-                  + (unpackedMask.g == 1) * float4(pixel.g, pixel.g, pixel.g, 1)
-                  + (unpackedMask.b == 1) * float4(pixel.b, pixel.b, pixel.b, 1)
-                  + (unpackedMask.a == 1) * float4(pixel.a, pixel.a, pixel.a, 1);
-            break;
-        default:
-            pixel *= unpackedMask;
-            pixel.a = lerp(1 , pixel.a, unpackedMask.w);
-            break;
-    }
-    result[id.xy] = pixel;
+    float4 oneChannel = (unpackedMask.r == 1) * float4(pixel.r, pixel.r, pixel.r, 1)
+                      + (unpackedMask.g == 1) * float4(pixel.g, pixel.g, pixel.g, 1)
+                      + (unpackedMask.b == 1) * float4(pixel.b, pixel.b, pixel.b, 1)
+                      + (unpackedMask.a == 1) * float4(pixel.a, pixel.a, pixel.a, 1);
+    float4 multiChannel = pixel * unpackedMask;
+    multiChannel.a = lerp(1 , pixel.a, unpackedMask.w);
+    result[id.xy] = lerp(oneChannel, multiChannel, t);
 }

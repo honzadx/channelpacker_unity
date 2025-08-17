@@ -287,8 +287,8 @@ namespace AmeWorks.ChromaPacker.Editor
             textureSizeField.RegisterValueChangedCallback(evt =>
             {
                 var sanitizedResolution = new Vector2Int(
-                    Mathf.Clamp(evt.newValue.x, 0, MAX_RESOLUTION),
-                    Mathf.Clamp(evt.newValue.y, 0, MAX_RESOLUTION));
+                    Mathf.Clamp(evt.newValue.x, 1, MAX_RESOLUTION),
+                    Mathf.Clamp(evt.newValue.y, 1, MAX_RESOLUTION));
 
                 textureSizeField.value = sanitizedResolution;
                 m_textureSize = sanitizedResolution;
@@ -365,29 +365,38 @@ namespace AmeWorks.ChromaPacker.Editor
                         defaultValue    = m_channelDefaultValues[i],
                     };
                 }
+                
+                if (m_resultRT != null && (m_textureSize.x != m_resultRT.width || m_textureSize.y != m_resultRT.height))
+                {
+                    m_resultRT.Release();
+                    m_resultRT = null;
+                    
+                    m_previewResultRT.Release();
+                    m_previewResultRT = null;
+                }
+
+                if (m_resultRT == null && m_textureSize != Vector2Int.zero)
+                {
+                    m_resultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
+                    m_resultRT.enableRandomWrite = true;
+                    m_resultRT.Create();
+            
+                    m_previewResultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
+                    m_previewResultRT.enableRandomWrite = true;
+                    m_previewResultRT.Create();
+                }
             }
 
             void Blit()
             {
-                if (m_textureSize.x <= 0 || m_textureSize.y <= 0)
+                if (m_textureSize == Vector2Int.zero) 
                     return;
 
-                if (m_resultRT != null) 
-                    m_resultRT.Release();
-            
-                if (m_previewResultRT != null)
-                    m_previewResultRT.Release();
-            
-                m_resultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
-                m_resultRT.enableRandomWrite = true;
-                m_resultRT.Create();
-            
-                m_previewResultRT = new (m_textureSize.x, m_textureSize.y, 0, RenderTextureFormat.ARGB32);
-                m_previewResultRT.enableRandomWrite = true;
-                m_previewResultRT.Create();
-            
                 var channelDataBuffer = new ComputeBuffer(4, sizeof(float) * 6 + sizeof(int) * 7);
                 channelDataBuffer.SetData(m_channelDataArray);
+
+                var threadCountX = Mathf.CeilToInt(m_textureSize.x / 32.0f);
+                var threadCountY = Mathf.CeilToInt(m_textureSize.y / 32.0f);
             
                 m_packTextureCS.SetBuffer(0, s_channelDataShaderID, channelDataBuffer);
                 m_packTextureCS.SetTexture(0, s_inputRShaderID, m_channelTextures[0] ?? Texture2D.blackTexture);
@@ -395,15 +404,15 @@ namespace AmeWorks.ChromaPacker.Editor
                 m_packTextureCS.SetTexture(0, s_inputBShaderID, m_channelTextures[2] ?? Texture2D.blackTexture);
                 m_packTextureCS.SetTexture(0, s_inputAShaderID, m_channelTextures[3] ?? Texture2D.blackTexture);
                 m_packTextureCS.SetTexture(0, s_resultShaderID, m_resultRT);
-                m_packTextureCS.Dispatch(0, m_textureSize.x, m_textureSize.y, 1);
+                m_packTextureCS.Dispatch(0, threadCountX, threadCountY, 1);
             
                 channelDataBuffer.Release();
 
                 m_maskingPreviewFilterCS.SetInts(s_maskShaderID, (int)m_previewMasking);
                 m_maskingPreviewFilterCS.SetTexture(0, s_inputShaderID, m_resultRT);
                 m_maskingPreviewFilterCS.SetTexture(0, s_resultShaderID, m_previewResultRT);
-                m_maskingPreviewFilterCS.Dispatch(0, m_textureSize.x, m_textureSize.y, 1);
-            
+                m_maskingPreviewFilterCS.Dispatch(0, threadCountX, threadCountY, 1);
+                
                 m_previewResultImage.image = m_previewResultRT;
             }
         }

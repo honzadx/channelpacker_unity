@@ -31,10 +31,14 @@ inline float ResolveChannel(uint index, uint2 id)
 
     int4 unpackedMask = UnpackMask(channelData.mask);
 
-    float4 pixel = (index == 0) * inputR[id.xy]
-                 + (index == 1) * inputG[id.xy]
-                 + (index == 2) * inputB[id.xy]
-                 + (index == 3) * inputA[id.xy];
+    float4 pixel;
+    switch(index)
+    {
+        default: case 0: pixel = inputR[id.xy]; break;
+        case 1: pixel = inputG[id.xy]; break;
+        case 2: pixel = inputB[id.xy]; break;
+        case 3: pixel = inputA[id.xy]; break;
+    }
 
     float textureValue = unpackedMask.r * pixel.r
                        + unpackedMask.g * pixel.g
@@ -53,7 +57,7 @@ inline float ResolveChannel(uint index, uint2 id)
     return result;
 }
  
-[numthreads(1,1,1)]
+[numthreads(32,32,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     result[id.xy] = float4
