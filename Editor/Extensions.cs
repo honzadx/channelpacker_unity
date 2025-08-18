@@ -5,6 +5,13 @@ namespace AmeWorks.ChromaPacker.Editor
 {
     internal static class VisualElementExtensions
     {
+        public static void AddIfTrue(this VisualElement self, VisualElement child, bool condition)
+        {
+            if (!condition)
+                return;
+            self.Add(child);
+        }
+        
         public static void SetBorderColor(this VisualElement self, Color color)
         {
             self.style.borderLeftColor = color;

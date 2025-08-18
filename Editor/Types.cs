@@ -13,7 +13,7 @@ namespace AmeWorks.ChromaPacker.Editor
         public int mask;
         public int samplingType;
         public int invert;
-        public float scaler;
+        public float multiply;
         public float defaultValue;
     }
 }
