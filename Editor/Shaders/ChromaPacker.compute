@@ -58,7 +58,7 @@ inline float ResolveChannel(uint index, uint2 id)
     int defaultMask = !(channelData.mask << 1) & 1;
     int textureMask = 1 - defaultMask;
     float result = lerp(channelData.defaultValue, textureValue, textureMask);
-    result = lerp(result, 1 - result, channelData.invert);
+    result = lerp(result, 1 - result, channelData.invert * textureMask);
     result = lerp(result, result * channelData.scaler, textureMask);
     float aboveMin = min(step(channelData.clip.x, result), 1);
     float belowMax = min(step(result, channelData.clip.y), 1);
