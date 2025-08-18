@@ -16,9 +16,9 @@ namespace AmeWorks.ChromaPacker.Editor
         private const float WINDOW_WIDTH = 274 + BASE_PADDING * 2;
         private const float MIN_WINDOW_HEIGHT = 128 + BASE_PADDING * 2;
 
-        private static readonly Color s_diffuseRed = new (1, 0.2f, 0.5f);
-        private static readonly Color s_diffuseGreen = new (0.25f, 0.85f, 0.5f);
-        private static readonly Color s_diffuseBlue = new (0.3f, 0.7f, 1f);
+        private static readonly Color s_diffuseRed = new (1, 0.15f, 0.3f);
+        private static readonly Color s_diffuseGreen = new (0.25f, 0.95f, 0.5f);
+        private static readonly Color s_diffuseBlue = new (0.1f, 0.5f, 1.0f);
         private static readonly Color s_darkerGrey = new (0.2f, 0.2f, 0.2f);
         
         private static readonly int s_channelDataShaderID = Shader.PropertyToID("channelDataBuffer");
